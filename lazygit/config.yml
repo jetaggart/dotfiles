@@ -1,0 +1,51 @@
+gui:
+  showIcons: true
+  nerdFontsVersion: "3"
+  scrollHeight: 10
+  scrollPastBottom: true
+  mouseEvents: true
+  border: rounded
+  theme:
+    lightTheme: true
+    activeBorderColor:
+      - black
+      - bold
+    inactiveBorderColor:
+      - black
+    selectedLineBgColor:
+      - default
+    cherryPickedCommitBgColor:
+      - blue
+    cherryPickedCommitFgColor:
+      - white
+    markedBaseCommitBgColor:
+      - yellow
+    markedBaseCommitFgColor:
+      - black
+
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never
+  commit:
+    signOff: false
+  merging:
+    args: ""
+  log:
+    showGraph: always
+  truncateCopiedCommitHashesTo: 12
+
+os:
+  copyToClipboardCmd: pbcopy
+  open: open {{filename}}
+  openLink: open {{link}}
+
+refresher:
+  refreshInterval: 10
+  fetchInterval: 60
+
+update:
+  method: never
+
+confirmOnQuit: false
+quitOnTopLevelReturn: true
