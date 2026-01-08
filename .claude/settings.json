@@ -1,0 +1,6 @@
+{
+  "model": "opus",
+  "env": {
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1"
+  }
+}
