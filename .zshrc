@@ -12,6 +12,7 @@ export PATH="/Users/jetaggart/.codeium/windsurf/bin:$PNPM_HOME:$PATH"
 alias vi=nvim
 alias vim=nvim
 alias ai=aichat
+alias lg=lazygit
 
 alias g='git'
 alias ga='git add'
