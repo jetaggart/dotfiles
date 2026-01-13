@@ -8,6 +8,7 @@ export EDITOR="/opt/homebrew/bin/nvim"
 export NVM_DIR="$HOME/.nvm"
 export PNPM_HOME="/Users/jetaggart/Library/pnpm"
 export PATH="/Users/jetaggart/.codeium/windsurf/bin:$PNPM_HOME:$PATH"
+export PATH="/Users/jetaggart/bin/tools:$PNPM_HOME:$PATH"
 
 alias vi=nvim
 alias vim=nvim
@@ -239,13 +240,23 @@ trash() {
   done
 }
 
-workon() {
+wtn() {
   local branch=$1
   local repo_name=$(basename $(git rev-parse --show-toplevel))
   local parent_dir=$(dirname $(git rev-parse --show-toplevel))
   local worktree_path="$parent_dir/$repo_name-$branch"
   git worktree add "$worktree_path" "$branch" 2>/dev/null || git worktree add -b "$branch" "$worktree_path"
   cd "$worktree_path"
+  cvsc
+  cursor .
+}
+
+wtd() {
+  local branch=$1
+  local repo_name=$(basename $(git rev-parse --show-toplevel))
+  local parent_dir=$(dirname $(git rev-parse --show-toplevel))
+  local worktree_path="$parent_dir/$repo_name-$branch"
+  git worktree remove "$worktree_path"
 }
 
 source ${HOME}/.ghcup/env
@@ -255,3 +266,27 @@ case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
+
+cvsc() {
+  BRANCH=$(git branch --show-current 2>/dev/null)
+  if [ -z "$BRANCH" ]; then
+    echo "Not in a git repo"
+    return 1
+  fi
+
+  DIR_NAME=${PWD##*/}
+  HASH=$(echo -n "$DIR_NAME-$BRANCH" | md5 | head -c 6)
+  COLOR="#$HASH"
+
+  mkdir -p .vscode
+  cat > .vscode/settings.json << SETTINGS
+{
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "$COLOR",
+    "titleBar.activeForeground": "#FFFFFF"
+  }
+}
+SETTINGS
+
+  echo "Set title bar color to $COLOR for $DIR_NAME:$BRANCH"
+}
