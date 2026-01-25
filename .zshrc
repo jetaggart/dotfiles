@@ -14,6 +14,7 @@ alias vi=nvim
 alias vim=nvim
 alias ai=aichat
 alias lg=lazygit
+alias fix-dn='find "$HOME/.cursor/extensions" -type f -path "*/ms-dotnettools.csdevkit-*/dist/extension.js" -exec sed -i "" "s/checkHostApp=function(){return!!\[\"Visual Studio Code\"/checkHostApp=function(){return!!\[\"Cursor\",\"Visual Studio Code\"/" {} +'
 
 alias g='git'
 alias ga='git add'
