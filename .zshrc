@@ -293,8 +293,6 @@ wtn() {
   local worktree_path="$parent_dir/$repo_name-$branch"
   git worktree add "$worktree_path" "$branch" 2>/dev/null || git worktree add -b "$branch" "$worktree_path"
   cd "$worktree_path"
-  cvsc
-  cursor .
 }
 
 wtd() {
