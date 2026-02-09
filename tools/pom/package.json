@@ -1,0 +1,21 @@
+{
+  "name": "pom",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.tsx --outdir dist --target bun",
+    "install-cli": "bun run build && mkdir -p ~/bin/tools && cp dist/index.js ~/bin/tools/pom && chmod +x ~/bin/tools/pom"
+  },
+  "dependencies": {
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "node-notifier": "^10.0.1",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node-notifier": "^8.0.5",
+    "@types/react": "^18.3.3",
+    "react-devtools-core": "^7.0.1",
+    "typescript": "^5.5.0"
+  }
+}
