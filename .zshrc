@@ -98,7 +98,7 @@ alias gcpc='git cherry-pick --continue'
 # --- Git: Diff ---
 
 alias gd='git diff'
-alias gdca='git diff --cached'
+alias gdc='git diff --cached'
 alias gdcw='git diff --cached --word-diff'
 alias gds='git diff --staged'
 alias gdt='git diff-tree --no-commit-id --name-only -r'
