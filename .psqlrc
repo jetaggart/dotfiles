@@ -1,0 +1,37 @@
+\set QUIET 1
+
+-- Pager
+\setenv PAGER 'pspg --no-mouse -b'
+
+-- Display
+\pset linestyle unicode
+\pset border 2
+\pset null '∅'
+\pset pager always
+\pset format wrapped
+
+-- Timing
+\timing on
+
+-- History
+\set HISTSIZE 5000
+\set HISTCONTROL ignoredups
+
+-- Prompts
+\set PROMPT1 '%n@%/%R%x%# '
+\set PROMPT2 '%R%x%# '
+
+-- Autocomplete
+\set COMP_KEYWORD_CASE upper
+
+-- Helpful shortcuts
+\set conn 'SELECT usename, application_name, client_addr, state FROM pg_stat_activity;'
+\set locks 'SELECT pid, relation::regclass, mode, granted FROM pg_locks WHERE relation IS NOT NULL;'
+\set size 'SELECT relname, pg_size_pretty(pg_total_relation_size(oid)) FROM pg_class WHERE relkind = \'r\' ORDER BY pg_total_relation_size(oid) DESC LIMIT 20;'
+\set slow 'SELECT pid, now() - pg_stat_activity.query_start AS duration, query FROM pg_stat_activity WHERE state != \'idle\' ORDER BY duration DESC LIMIT 10;'
+
+-- Error verbosity
+\set VERBOSITY verbose
+\set ON_ERROR_ROLLBACK interactive
+
+\unset QUIET
