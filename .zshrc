@@ -270,6 +270,27 @@ alias gamscp='git am --show-current-patch'
 alias gg='git gui citool'
 alias gga='git gui citool --amend'
 
+# --- Lettuce ---
+alias lalogin='aws sso login --sso-session lettuce'
+
+bindkey -v
+bindkey '\e^?' unix-word-rubout
+bindkey -M viins '^P' up-history
+bindkey -M viins '^N' down-history
+setopt prompt_subst
+VIM_MODE='[I]'
+zle-keymap-select() {
+  [[ $KEYMAP == vicmd ]] && VIM_MODE='[N]' || VIM_MODE='[I]'
+  zle reset-prompt
+}
+zle-line-init() {
+  zle -K viins
+  VIM_MODE='[I]'
+}
+zle -N zle-keymap-select
+zle -N zle-line-init
+PROMPT='${VIM_MODE} '"${PROMPT}"
+
 # --- Functions ---
 
 trash() {
@@ -330,6 +351,7 @@ SETTINGS
 
 # --- Runtime Setup ---
 
+source <(fzf --zsh)
 source ${HOME}/.ghcup/env
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
