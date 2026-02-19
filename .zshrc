@@ -304,7 +304,7 @@ alias gg='git gui citool'
 alias gga='git gui citool --amend'
 
 # --- Lettuce ---
-alias lalogin='aws sso login --sso-session lettuce'
+alias lettuce-aws-dev-login='aws sso login --sso-session lettuce'
 
 # --- Functions ---
 
