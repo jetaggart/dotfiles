@@ -14,6 +14,39 @@ export PNPM_HOME="/Users/jetaggart/Library/pnpm"
 export PATH="/Users/jetaggart/.cursor/extensions/bin:$PNPM_HOME:$PATH"
 export PATH="/Users/jetaggart/bin/tools:$PNPM_HOME:$PATH"
 
+# --- Runtime Setup ---
+
+export FZF_CTRL_R_OPTS='--bind=ctrl-r:toggle-sort'
+source <(fzf --zsh)
+source ${HOME}/.ghcup/env
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+bindkey -v
+bindkey '\e^?' unix-word-rubout
+bindkey -M viins '^P' up-history
+bindkey -M viins '^N' down-history
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X' edit-command-line
+setopt prompt_subst
+VIM_MODE='[I]'
+zle-keymap-select() {
+  [[ $KEYMAP == vicmd ]] && VIM_MODE='[N]' || VIM_MODE='[I]'
+  zle reset-prompt
+}
+zle-line-init() {
+  zle -K viins
+  VIM_MODE='[I]'
+}
+zle -N zle-keymap-select
+zle -N zle-line-init
+PROMPT='${VIM_MODE} '"${PROMPT}"
+
 # --- General Aliases ---
 
 alias vi=nvim
@@ -273,27 +306,6 @@ alias gga='git gui citool --amend'
 # --- Lettuce ---
 alias lalogin='aws sso login --sso-session lettuce'
 
-bindkey -v
-bindkey '\e^?' unix-word-rubout
-bindkey -M viins '^P' up-history
-bindkey -M viins '^N' down-history
-autoload -Uz edit-command-line
-zle -N edit-command-line
-bindkey '^X' edit-command-line
-setopt prompt_subst
-VIM_MODE='[I]'
-zle-keymap-select() {
-  [[ $KEYMAP == vicmd ]] && VIM_MODE='[N]' || VIM_MODE='[I]'
-  zle reset-prompt
-}
-zle-line-init() {
-  zle -K viins
-  VIM_MODE='[I]'
-}
-zle -N zle-keymap-select
-zle -N zle-line-init
-PROMPT='${VIM_MODE} '"${PROMPT}"
-
 # --- Functions ---
 
 trash() {
@@ -352,14 +364,3 @@ SETTINGS
   echo "Set title bar color to $COLOR for $DIR_NAME:$BRANCH"
 }
 
-# --- Runtime Setup ---
-
-export FZF_CTRL_R_OPTS='--bind=ctrl-r:toggle-sort'
-source <(fzf --zsh)
-source ${HOME}/.ghcup/env
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
