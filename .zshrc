@@ -277,6 +277,9 @@ bindkey -v
 bindkey '\e^?' unix-word-rubout
 bindkey -M viins '^P' up-history
 bindkey -M viins '^N' down-history
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X' edit-command-line
 setopt prompt_subst
 VIM_MODE='[I]'
 zle-keymap-select() {
@@ -351,6 +354,7 @@ SETTINGS
 
 # --- Runtime Setup ---
 
+export FZF_CTRL_R_OPTS='--bind=ctrl-r:toggle-sort'
 source <(fzf --zsh)
 source ${HOME}/.ghcup/env
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
