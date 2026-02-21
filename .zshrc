@@ -364,3 +364,4 @@ SETTINGS
   echo "Set title bar color to $COLOR for $DIR_NAME:$BRANCH"
 }
 
+jfx() { local f; f="$(mktemp)" && "$@" </dev/null >"$f" && fx "$f"; rm "$f"; }
