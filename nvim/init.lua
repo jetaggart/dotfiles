@@ -100,6 +100,17 @@ vim.g.have_nerd_font = false
 
 vim.diagnostic.enable(false)
 
+vim.o.autoread = true
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'CursorHold' }, {
+  command = 'silent! checktime',
+})
+local timer = vim.uv.new_timer()
+timer:start(0, 1000, vim.schedule_wrap(function()
+  if vim.fn.getcmdwintype() == '' then
+    vim.cmd('silent! checktime')
+  end
+end))
+
 -- Make line numbers default
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
@@ -166,6 +177,7 @@ vim.o.confirm = true
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('n', '<leader>cp', function() vim.fn.setreg('+', vim.fn.expand('%')) end, { desc = '[C]opy [P]ath (relative)' })
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
@@ -425,6 +437,13 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+      vim.keymap.set('v', '<leader>sw', function()
+        local saved = vim.fn.getreg('v')
+        vim.cmd('noautocmd normal! "vy')
+        local selection = vim.fn.getreg('v')
+        vim.fn.setreg('v', saved)
+        builtin.grep_string({ search = selection })
+      end, { desc = '[S]earch visual [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
@@ -665,6 +684,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        ts_ls = {},
         pyright = {
           capabilities = (function()
             local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -835,9 +855,8 @@ require('lazy').setup({
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'default',
-
-        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+        ['<CR>'] = { 'accept', 'fallback' },
+        ['<Tab>'] = { 'accept', 'fallback' },
       },
 
       appearance = {
@@ -847,8 +866,9 @@ require('lazy').setup({
       },
 
       completion = {
-        -- By default, you may press `<c-space>` to show the documentation.
-        -- Optionally, set `auto_show = true` to show the documentation after a delay.
+        trigger = { show_on_keyword = false, show_on_trigger_character = false },
+        list = { selection = { preselect = false, auto_insert = false } },
+        menu = { auto_show = false },
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
       },
 
@@ -940,7 +960,7 @@ require('lazy').setup({
 
       require('nvim-treesitter.configs').setup {
         parser_install_dir = parser_install_dir,
-        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' },
+        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'typescript', 'tsx' },
         auto_install = true,
         highlight = {
           enable = true,
