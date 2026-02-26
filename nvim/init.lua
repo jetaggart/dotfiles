@@ -112,6 +112,10 @@ timer:start(0, 1000, vim.schedule_wrap(function()
 end))
 
 -- Make line numbers default
+vim.schedule(function()
+  vim.o.clipboard = 'unnamedplus'
+end)
+
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
