@@ -209,6 +209,28 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+vim.keymap.set('n', '<C-LeftMouse>', function()
+  vim.cmd([[normal! \<LeftMouse>]])
+  vim.lsp.buf.definition()
+end, { desc = 'Ctrl+click go to definition' })
+vim.keymap.set('n', '<C-]>', vim.lsp.buf.definition, { desc = 'Go to definition (LSP)' })
+vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition (LSP)' })
+
+vim.keymap.set('v', '<D-c>', '"+y', { desc = 'Copy' })
+vim.keymap.set('n', '<D-v>', '"+p', { desc = 'Paste' })
+vim.keymap.set('v', '<D-v>', '"+p', { desc = 'Paste' })
+vim.keymap.set('i', '<D-v>', '<C-r>+', { desc = 'Paste' })
+vim.keymap.set('c', '<D-v>', '<C-r>+', { desc = 'Paste' })
+vim.keymap.set('v', '<D-x>', '"+d', { desc = 'Cut' })
+vim.keymap.set('n', '<D-a>', 'ggVG', { desc = 'Select all' })
+vim.keymap.set('i', '<D-a>', '<Esc>ggVG', { desc = 'Select all' })
+vim.keymap.set('n', '<D-s>', '<cmd>w<CR>', { desc = 'Save' })
+vim.keymap.set('i', '<D-s>', '<Esc><cmd>w<CR>', { desc = 'Save' })
+vim.keymap.set('n', '<D-z>', 'u', { desc = 'Undo' })
+vim.keymap.set('i', '<D-z>', '<C-o>u', { desc = 'Undo' })
+vim.keymap.set('n', '<D-S-z>', '<C-r>', { desc = 'Redo' })
+vim.keymap.set('i', '<D-S-z>', '<C-o><C-r>', { desc = 'Redo' })
+
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
