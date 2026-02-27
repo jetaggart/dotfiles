@@ -22,11 +22,10 @@ gui:
       - yellow
     markedBaseCommitFgColor:
       - black
-
 git:
-  paging:
-    colorArg: always
-    pager: delta --dark --paging=never
+  pagers:
+    - colorArg: always
+      pager: delta --light --paging=never
   commit:
     signOff: false
   merging:
@@ -34,18 +33,14 @@ git:
   log:
     showGraph: always
   truncateCopiedCommitHashesTo: 12
-
 os:
   copyToClipboardCmd: pbcopy
   open: open {{filename}}
   openLink: open {{link}}
-
 refresher:
   refreshInterval: 10
   fetchInterval: 60
-
 update:
   method: never
-
 confirmOnQuit: false
 quitOnTopLevelReturn: true

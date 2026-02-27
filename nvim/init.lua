@@ -112,9 +112,7 @@ timer:start(0, 1000, vim.schedule_wrap(function()
 end))
 
 -- Make line numbers default
-vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
-end)
+vim.o.clipboard = ''
 
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
@@ -217,6 +215,12 @@ vim.keymap.set('n', '<C-]>', vim.lsp.buf.definition, { desc = 'Go to definition 
 vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition (LSP)' })
 
 vim.keymap.set('v', '<D-c>', '"+y', { desc = 'Copy' })
+vim.keymap.set('v', '<M-c>', '"+y', { desc = 'Copy' })
+vim.keymap.set('n', '<M-v>', '"+p', { desc = 'Paste' })
+vim.keymap.set('v', '<M-v>', '"+p', { desc = 'Paste' })
+vim.keymap.set('i', '<M-v>', '<C-r>+', { desc = 'Paste' })
+vim.keymap.set('c', '<M-v>', '<C-r>+', { desc = 'Paste' })
+vim.keymap.set('v', '<M-x>', '"+d', { desc = 'Cut' })
 vim.keymap.set('n', '<D-v>', '"+p', { desc = 'Paste' })
 vim.keymap.set('v', '<D-v>', '"+p', { desc = 'Paste' })
 vim.keymap.set('i', '<D-v>', '<C-r>+', { desc = 'Paste' })
@@ -813,11 +817,15 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        json = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd', 'prettier', stop_after_first = true },
+        html = { 'prettierd', 'prettier', stop_after_first = true },
+        markdown = { 'prettierd', 'prettier', stop_after_first = true },
+        yaml = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -931,11 +939,89 @@ require('lazy').setup({
   },
 
   {
+    'linrongbin16/gitlinker.nvim',
+    keys = {
+      { '<leader>gl', '<cmd>GitLink<cr>', mode = { 'n', 'v' }, desc = 'Open on GitHub' },
+      { '<leader>gL', '<cmd>GitLink blame<cr>', mode = { 'n', 'v' }, desc = 'Open blame on GitHub' },
+    },
+    opts = {},
+  },
+
+  {
     'kdheepak/lazygit.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
     keys = {
-      { '<leader>gg', '<cmd>LazyGit<cr>', desc = 'LazyGit' },
+      { '<leader>gg', '<cmd>LazyGitCurrentFile<cr>', desc = 'LazyGit' },
     },
+  },
+
+  {
+    'nvim-neotest/neotest',
+    dependencies = {
+      'nvim-neotest/nvim-nio',
+      'nvim-lua/plenary.nvim',
+      'antoinemadec/FixCursorHold.nvim',
+      'nvim-treesitter/nvim-treesitter',
+      'nvim-neotest/neotest-python',
+      'nvim-neotest/neotest-jest',
+      'marilari88/neotest-vitest',
+    },
+    keys = {
+      { '<leader>rt', function() require('neotest').run.run() end, desc = '[R]un nearest [T]est' },
+      { '<leader>rf', function() require('neotest').run.run(vim.fn.expand('%')) end, desc = '[R]un [F]ile tests' },
+      { '<leader>ro', function() require('neotest').output_panel.toggle() end, desc = '[R]un [O]utput panel' },
+      { '<leader>rs', function() require('neotest').summary.toggle() end, desc = '[R]un [S]ummary' },
+    },
+    config = function()
+      local function find_project_root(path)
+        return vim.fs.root(path, { 'pyproject.toml', 'setup.py', 'setup.cfg', 'package.json', '.git' })
+      end
+
+      vim.api.nvim_set_hl(0, 'NeotestPassed', { fg = '#1e7a1e' })
+      vim.api.nvim_set_hl(0, 'NeotestFailed', { fg = '#cc0000' })
+      vim.api.nvim_set_hl(0, 'NeotestRunning', { fg = '#b58900' })
+      vim.api.nvim_set_hl(0, 'NeotestSkipped', { fg = '#6c71c4' })
+      vim.api.nvim_set_hl(0, 'NeotestNamespace', { fg = '#8839ef' })
+      vim.api.nvim_set_hl(0, 'NeotestFile', { fg = '#1e66f5' })
+      vim.api.nvim_set_hl(0, 'NeotestDir', { fg = '#1e66f5' })
+      vim.api.nvim_set_hl(0, 'NeotestIndent', { fg = '#9ca0b0' })
+      vim.api.nvim_set_hl(0, 'NeotestExpandMarker', { fg = '#7c7f93' })
+      vim.api.nvim_set_hl(0, 'NeotestAdapterName', { fg = '#cc0000', bold = true })
+      vim.api.nvim_set_hl(0, 'NeotestWinSelect', { fg = '#1e66f5', bold = true })
+      vim.api.nvim_set_hl(0, 'NeotestMarked', { fg = '#c4600a', bold = true })
+      vim.api.nvim_set_hl(0, 'NeotestTarget', { fg = '#cc0000' })
+      vim.api.nvim_set_hl(0, 'NeotestWatching', { fg = '#b58900' })
+      vim.api.nvim_set_hl(0, 'NeotestFocused', { bold = true, underline = true })
+
+      require('neotest').setup({
+        discovery = {
+          enabled = false,
+        },
+        adapters = {
+          require('neotest-python')({
+            runner = 'pytest',
+            python = function()
+              local root = find_project_root(vim.fn.expand('%:p'))
+              if root then
+                return root .. '/.venv/bin/python'
+              end
+              return '.venv/bin/python'
+            end,
+            pytest_discover_instances = true,
+            root = find_project_root,
+            cwd = find_project_root,
+          }),
+          require('neotest-jest')({
+            root = find_project_root,
+            cwd = find_project_root,
+          }),
+          require('neotest-vitest')({
+            root = find_project_root,
+            cwd = find_project_root,
+          }),
+        },
+      })
+    end,
   },
 
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
