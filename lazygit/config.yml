@@ -8,20 +8,28 @@ gui:
   theme:
     lightTheme: true
     activeBorderColor:
-      - black
+      - "#1e66f5"
       - bold
     inactiveBorderColor:
-      - black
+      - "#8c8fa1"
+    optionsTextColor:
+      - "#1e66f5"
     selectedLineBgColor:
-      - default
+      - "#dce0e8"
+    selectedRangeBgColor:
+      - "#dce0e8"
     cherryPickedCommitBgColor:
-      - blue
+      - "#7287fd"
     cherryPickedCommitFgColor:
-      - white
+      - "#eff1f5"
     markedBaseCommitBgColor:
-      - yellow
+      - "#df8e1d"
     markedBaseCommitFgColor:
-      - black
+      - "#eff1f5"
+    unstagedChangesColor:
+      - "#d20f39"
+    defaultFgColor:
+      - "#4c4f69"
 git:
   pagers:
     - colorArg: always

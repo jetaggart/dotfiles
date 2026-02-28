@@ -179,7 +179,7 @@ alias gpsup='git push --set-upstream origin $(git_current_branch)'
 
 # --- Git: Pull ---
 
-alias gl='git pull'
+alias gl='lazygit log'
 alias gpr='git pull --rebase'
 alias gup='git pull --rebase'
 alias gupv='git pull --rebase -v'
@@ -312,6 +312,8 @@ alias grt='cd "$(git rev-parse --show-toplevel || echo .)"'
 alias gwch='git whatchanged -p --abbrev-commit --pretty=medium'
 alias gwip='git add -A; git rm $(git ls-files --deleted) 2> /dev/null; git commit --no-verify --no-gpg-sign -m "--wip-- [skip ci]"'
 alias gunwip='git log -n 1 | grep -q -c "--wip--" && git reset HEAD~1'
+alias pg='pgcli'
+
 alias gam='git am'
 alias gamc='git am --continue'
 alias gams='git am --skip'
