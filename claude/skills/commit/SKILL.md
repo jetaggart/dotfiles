@@ -27,9 +27,12 @@ arguments:
 
 4. Present the commit message to the user with these options:
    - **a** (approve) - commit as-is
+   - **ap** (approve-push) - commit as-is, then push to remote
    - **e** (edit) - ask the user to provide the updated commit message, then commit with that
    - **rw** (rewrite) - have an interactive conversation about what to change, draft a new message based on feedback, then loop back to step 4
 
 5. Once approved, stage all changes with `git add` for the relevant files (not `git add -A`), then commit.
 
-6. Show `git log --oneline -1` to confirm.
+6. If **ap** was chosen, run `git push`.
+
+7. Show `git log --oneline -1` to confirm.
