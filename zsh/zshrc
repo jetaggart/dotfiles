@@ -26,6 +26,23 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 
+setopt IGNORE_EOF
+
+__ctrl_d_count=0
+__ctrl_d_reset() { __ctrl_d_count=0 }
+precmd_functions+=(__ctrl_d_reset)
+
+__confirm_exit() {
+  if (( __ctrl_d_count == 0 )); then
+    __ctrl_d_count=1
+    zle -M "Press Ctrl+D again to exit"
+    return 0
+  fi
+  exit
+}
+zle -N __confirm_exit
+bindkey '^D' __confirm_exit
+
 bindkey -v
 bindkey '\e^?' unix-word-rubout
 bindkey -M viins '^P' up-history

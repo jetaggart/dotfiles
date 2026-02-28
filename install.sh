@@ -12,6 +12,9 @@ ln -sfn "$DOTFILES/nvim" "$HOME/.config/nvim"
 mkdir -p "$HOME/Library/Application Support/lazygit"
 ln -sf "$DOTFILES/lazygit/config.yml" "$HOME/Library/Application Support/lazygit/config.yml"
 
+mkdir -p "$HOME/Library/Application Support/com.mitchellh.ghostty"
+ln -sf "$DOTFILES/ghostty/config" "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
+
 mkdir -p "$HOME/.claude"
 ln -sf "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"

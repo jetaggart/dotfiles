@@ -5,3 +5,11 @@ HOWEVER DO NOT DELETE COMMENTS THAT ARE PLACED THERE BY OTHERS. IF YOU DID NOT W
 DO NOT PUT YOUR NAME ON ANYTHING INCLUDING GIT MESSAGES. DO NOT SAY "co-authored by Claude" or anything like that.
 
 NEVER add tests unless explicitly asked. Always start with implementation. Only write tests when specifically prompted to do so. Do not suggest adding tests, do not create test files proactively, do not include test code alongside implementation.
+
+Write code like a human. No AI-flavored patterns — no excessive guard clauses, no over-abstraction, no unnecessary verbosity. Keep it simple, direct, and natural. Match the style of the existing codebase. Do not mention Claude, AI, or assistants anywhere — not in code, not in commit messages, not in PR descriptions, not in any output.
+
+Minimize abstractions. Write straightforward code. Only introduce an abstraction when it is required or explicitly requested. If something can be done without an abstraction, do it without one — or ask first.
+
+Stop and ask when confused. If something isn't working as expected, if you're going in circles, or if you're about to start a deep debugging rabbit hole — stop and ask for guidance instead. Do not keep trying things on your own when the path is unclear. If a prompt says something should work a certain way and it doesn't, ask before digging deeper. Only dive deep when explicitly told to.
+
+Before implementing anything, look at nearby files to learn the existing patterns. If you're writing a test, read a neighboring test file first. If you're adding a route, check how other routes in the same directory are structured. Match what's already there — don't invent new conventions.
