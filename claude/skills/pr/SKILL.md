@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Fetch a GitHub PR for context — use as a style reference, template for implementation, or for reflection.
+description: Fetch a GitHub PR for context, use as a style reference, template for implementation, or for reflection.
 invoke: user
 arguments:
   - name: url
@@ -13,38 +13,31 @@ arguments:
 
 # PR Context Skill
 
-You have been given a GitHub PR to use as context. Follow these steps:
+<steps>
+1. Extract the owner, repo, and PR number from `$ARGUMENTS.url`. Run these in parallel:
+   ```
+   gh pr view <number> --repo <owner>/<repo>
+   gh pr diff <number> --repo <owner>/<repo>
+   gh pr view <number> --repo <owner>/<repo> --comments
+   ```
 
-## 1. Fetch the PR
+2. Read through the diff. Pay attention to:
+   - Structure and organization of changes
+   - Patterns used (naming, error handling, abstractions)
+   - How files relate to each other
+   - Overall approach and architecture decisions
 
-Extract the owner, repo, and PR number from the URL argument: `$ARGUMENTS.url`
+3. Respond based on `$ARGUMENTS.intent`:
 
-Run these commands to gather full context:
+   <intent_handlers>
+   **reflect on style** - Describe the patterns, conventions, and style choices. Reference specific files and lines. Keep it concrete.
 
-```
-gh pr view <number> --repo <owner>/<repo>
-gh pr diff <number> --repo <owner>/<repo>
-gh pr view <number> --repo <owner>/<repo> --comments
-```
+   **use as template** - Ask what the user wants to build. Implement it following the same patterns, structure, and conventions from the PR.
 
-## 2. Understand the PR
+   **summarize** - Concise breakdown of what the PR does, why, and how. Focus on approach, not line-by-line changes.
 
-Read through the diff carefully. Pay attention to:
-- The structure and organization of changes
-- Patterns used (naming, error handling, abstractions)
-- How files relate to each other
-- The overall approach and architecture decisions
+   **no intent provided** - Ask the user what they'd like to do with this PR.
 
-## 3. Respond to intent
-
-The user's intent is: `$ARGUMENTS.intent`
-
-If no intent was provided, ask the user what they'd like to do with this PR.
-
-**If reflecting on style:** Describe the patterns, conventions, and style choices. Note what's done well and what stands out. Keep it concrete — reference specific files and lines.
-
-**If using as a template:** Ask the user what they want to build. Then implement it following the same patterns, structure, and conventions from the PR. Match the style exactly.
-
-**If summarizing:** Give a concise breakdown of what the PR does, why, and how. Focus on the approach, not line-by-line changes.
-
-**For any other intent:** Use the PR as context and follow the user's instructions.
+   **other** - Use the PR as context and follow the user's instructions.
+   </intent_handlers>
+</steps>

@@ -384,3 +384,28 @@ SETTINGS
 }
 
 jfx() { local f; f="$(mktemp)" && "$@" </dev/null >"$f" && fx "$f"; rm "$f"; }
+
+me() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.me" ]]; then
+      (cd "$dir" && ".me/$1" "${@:2}")
+      return $?
+    fi
+    dir="${dir:h}"
+  done
+  echo "no .me directory found"
+  return 1
+}
+
+_me() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.me" ]]; then
+      compadd -- "$dir"/.me/*(N:t)
+      return
+    fi
+    dir="${dir:h}"
+  done
+}
+compdef _me me

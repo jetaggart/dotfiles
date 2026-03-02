@@ -1,7 +1,7 @@
 \set QUIET 1
 
 -- Pager
-\setenv PAGER 'pspg --no-mouse -b --theme 18'
+\setenv PAGER 'pspg --no-mouse -b'
 
 -- Display
 \pset linestyle unicode

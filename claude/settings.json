@@ -1,7 +1,11 @@
 {
   "env": {
-    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1"
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "false"
   },
+  "spinnerTipsEnabled": false,
   "permissions": {
     "allow": [
       "Bash(ls:*)",
