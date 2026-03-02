@@ -2,10 +2,6 @@
 name: commit
 description: Commit staged and unstaged changes with a concise, human commit message.
 invoke: user
-arguments:
-  - name: flags
-    description: "Optional flags: 'wb' to include a bullet-point summary body"
-    required: false
 ---
 
 # Commit Skill
@@ -19,20 +15,21 @@ arguments:
    - No prefixes like "feat:" or "fix:" unless the repo already uses them
    - No AI attribution of any kind
 
-3. If `$ARGUMENTS.flags` contains "wb":
-   - Add a blank line after the title
-   - Add a bullet-point summary of what changed and why
-   - Keep bullets concise, one line each
+3. Present the commit message to the user using AskUserQuestion. Include in the question text:
+   - Repository name (from the directory name or git remote)
+   - Current branch
+   - List of changed files
+   - The proposed commit message
 
-4. Present the commit message to the user with these options:
-   - **a** (approve) - commit as-is
-   - **ap** (approve-push) - commit as-is, then push to remote
-   - **e** (edit) - ask the user to provide the updated commit message, then commit with that
-   - **rw** (rewrite) - discuss what to change, draft a new message, then loop back to step 4
+   Options:
+   - "Approve" - commit as-is
+   - "Approve and push" - commit as-is, then push to remote
+   - "Expand" - add a bullet-point body summarizing what changed and why, then present again
+   - "Rewrite" - discuss what to change, draft a new message, then loop back to step 3
 
-5. Once approved, stage relevant files with `git add` by name (not `git add -A`), then commit.
+4. Once approved, stage relevant files with `git add` by name (not `git add -A`), then commit.
 
-6. If **ap** was chosen, run `git push`.
+5. If "Approve and push" was chosen, run `git push`.
 
-7. Show `git log --oneline -1` to confirm.
+6. Show `git log --oneline -1` to confirm.
 </steps>

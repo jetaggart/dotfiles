@@ -67,3 +67,7 @@ When creating CLAUDE.md, CLAUDE.development.md, or skill files for any project:
 - Keep files concise. Every line should earn its place.
 - Skills: use XML for input/output structure, numbered steps for procedures, <example> tags for desired patterns
 </generating_claude_and_skill_files>
+
+<committing>
+Always use the /commit skill when creating git commits. Never commit directly with git commands.
+</committing>
