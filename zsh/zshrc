@@ -409,3 +409,29 @@ _me() {
   done
 }
 compdef _me me
+
+wtn() {
+  local dest="$1"
+  local branch="$2"
+
+  if [[ -z "$dest" || -z "$branch" ]]; then
+    echo "usage: wtn <path> <branch>"
+    return 1
+  fi
+
+  local src
+  src="$(git rev-parse --show-toplevel)" || return 1
+
+  git worktree add "$dest" -b "$branch"  || git worktree add "$dest" "$branch" || return 1
+
+  local ignored
+  ignored="$(cd "$src" && git ls-files --others --ignored --exclude-standard)"
+
+  echo "$ignored" | while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    mkdir -p "$dest/$(dirname "$f")"
+    cp -a "$src/$f" "$dest/$f"
+  done
+
+  echo "worktree created at $dest with $(echo "$ignored" | wc -l | tr -d ' ') ignored files copied"
+}

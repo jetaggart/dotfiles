@@ -20,4 +20,6 @@ ln -sf "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"
 ln -sfn "$DOTFILES/claude/skills" "$HOME/.claude/skills"
 
+cd "$DOTFILES/tools/lettuce-workspace" && bun install && bun run install-cli
+
 echo "dotfiles installed"
