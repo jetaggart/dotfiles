@@ -10,6 +10,8 @@
     "command": "~/.claude/statusline.sh"
   },
   "spinnerTipsEnabled": false,
+  "prefersReducedMotion": true,
+  "promptSuggestionEnabled": false,
   "permissions": {
     "allow": [
       "Bash(ls:*)",

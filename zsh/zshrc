@@ -13,6 +13,7 @@ export NVM_DIR="$HOME/.nvm"
 export PNPM_HOME="/Users/jetaggart/Library/pnpm"
 export PATH="/Users/jetaggart/.cursor/extensions/bin:$PNPM_HOME:$PATH"
 export PATH="/Users/jetaggart/bin/tools:$PNPM_HOME:$PATH"
+export c="$HOME/code"
 
 # --- Runtime Setup ---
 

@@ -221,6 +221,11 @@ async function create(source: string, target: string) {
   execSync(`mkdir -p "${wsDir}"`);
   writeWsConfig(wsDir, source);
 
+  const claudeMd = join(source, "CLAUDE.md");
+  if (existsSync(claudeMd)) {
+    symlinkSync(claudeMd, join(wsDir, "CLAUDE.md"));
+  }
+
   const results: { repo: string; ok: boolean; msg: string }[] = [];
 
   for (const repo of selected) {

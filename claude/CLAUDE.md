@@ -68,6 +68,10 @@ When creating CLAUDE.md, CLAUDE.development.md, or skill files for any project:
 - Skills: use XML for input/output structure, numbered steps for procedures, <example> tags for desired patterns
 </generating_claude_and_skill_files>
 
+<focus_directories>
+A project's CLAUDE.local.md may contain a `<focus>` block listing directories to work in. When present, treat all other directories as out of scope. Do not read, modify, or search files outside the listed directories unless explicitly asked. This keeps work targeted in large monorepos.
+</focus_directories>
+
 <committing>
 Always use the /commit skill when creating git commits. Never commit directly with git commands.
 </committing>
