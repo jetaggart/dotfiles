@@ -7,7 +7,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(brew list:*)"
+      "Bash(brew list:*)",
+      "Bash(git push:*)"
     ]
   }
 }
