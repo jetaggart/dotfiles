@@ -144,13 +144,6 @@ async function create(source: string, target: string) {
   });
   if (p.isCancel(workspace)) { p.cancel("cancelled"); process.exit(0); }
 
-  const branch = await p.text({
-    message: "branch name",
-    defaultValue: workspace,
-    initialValue: workspace,
-  });
-  if (p.isCancel(branch)) { p.cancel("cancelled"); process.exit(0); }
-
   const sparseSelections: Record<string, string[]> = {};
 
   for (const repo of selected) {
@@ -185,7 +178,7 @@ async function create(source: string, target: string) {
     spinner.start(repo);
 
     try {
-      createWorktree(repoPath, dest, branch);
+      createWorktree(repoPath, dest, workspace);
 
       if (sparseSelections[repo]) {
         const folders = sparseSelections[repo];
@@ -261,13 +254,6 @@ async function add(source: string, _target: string) {
       spinner.stop(`${repo} - failed: ${stderr}`);
     }
   } else {
-    const branch = await p.text({
-      message: "branch name",
-      defaultValue: wsName,
-      initialValue: wsName,
-    });
-    if (p.isCancel(branch)) { p.cancel("cancelled"); process.exit(0); }
-
     let sparseSelection: string[] | null = null;
 
     if (dirs.length > 0) {
@@ -286,7 +272,7 @@ async function add(source: string, _target: string) {
     spinner.start(repo);
 
     try {
-      createWorktree(repoPath, dest, branch);
+      createWorktree(repoPath, dest, wsName);
 
       if (sparseSelection) {
         execSync("git sparse-checkout init --cone", { cwd: dest, stdio: "pipe" });
