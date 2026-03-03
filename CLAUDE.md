@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a personal dotfiles repository for managing configuration files across machines.
 
+## File Deletion
+
+Use `trash` instead of `rm` when deleting files. The `trash()` function in zshrc moves files to ~/.Trash instead of permanently deleting them.
+
 ## Current Configuration Files
 
 - `.tmux.conf` - tmux configuration with Catppuccin Mocha theme
