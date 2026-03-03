@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import * as p from "@clack/prompts";
-import { readdirSync, statSync, existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from "fs";
+import { readdirSync, statSync, lstatSync, existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync, symlinkSync, readlinkSync } from "fs";
 import { execSync } from "child_process";
 import { join, resolve, basename, dirname } from "path";
 
@@ -30,7 +30,7 @@ function parseArgs(): { command: string; source: string; target: string } {
     process.exit(1);
   }
 
-  if (command === "add" || command === "teardown") {
+  if (command === "add") {
     const config = readWsConfig();
     if (!config) {
       console.error("not in a workspace directory (no .ws.json found)");
@@ -39,11 +39,26 @@ function parseArgs(): { command: string; source: string; target: string } {
     return { command, ...config };
   }
 
+  if (command === "delete") {
+    if (rest.length === 1) {
+      const wsDir = resolve(rest[0]);
+      const configPath = join(wsDir, WS_CONFIG);
+      if (!existsSync(configPath)) {
+        console.error(`not a workspace directory (no .ws.json in ${wsDir})`);
+        process.exit(1);
+      }
+      const config = JSON.parse(readFileSync(configPath, "utf-8"));
+      return { command, source: config.source, target: wsDir };
+    }
+    console.error("usage: ws delete <workspace_dir>");
+    process.exit(1);
+  }
+
   console.error("usage: ws <command>");
   console.error("  ws create <preset>                 create workspace from preset");
   console.error("  ws create <source_dir> <target_dir> create workspace");
   console.error("  ws add                             add repo (run from workspace dir)");
-  console.error("  ws teardown                        teardown (run from workspace dir)");
+  console.error("  ws delete <workspace_dir>          delete a workspace");
   console.error(`presets: ${Object.keys(PRESETS).join(", ")}`);
   process.exit(1);
 }
@@ -100,18 +115,56 @@ function createWorktree(repoPath: string, dest: string, branch: string) {
     .toString().trim().split("\n").filter(Boolean);
 
   for (const f of ignored) {
+    const src = join(repoPath, f);
+    const dst = join(dest, f);
+    const stat = lstatSync(src);
     mkdirSync(join(dest, dirname(f)), { recursive: true });
-    copyFileSync(join(repoPath, f), join(dest, f));
+    if (stat.isSymbolicLink()) {
+      symlinkSync(readlinkSync(src), dst);
+    } else if (stat.isDirectory()) {
+      execSync(`cp -a "${src}" "${dst}"`, { stdio: "pipe" });
+    } else if (stat.isFile()) {
+      copyFileSync(src, dst);
+    }
   }
 }
 
-function hasSparseCheckout(worktreePath: string): boolean {
-  try {
-    const result = execSync("git sparse-checkout list", { cwd: worktreePath, stdio: "pipe" });
-    return result.toString().trim().length > 0;
-  } catch {
-    return false;
+function readFocusDirs(wsDir: string): Record<string, string[]> {
+  const filePath = join(wsDir, "CLAUDE.local.md");
+  if (!existsSync(filePath)) return {};
+  const content = readFileSync(filePath, "utf-8");
+  const result: Record<string, string[]> = {};
+  for (const match of content.matchAll(/^- (.+?)\/(.+?)\/$/gm)) {
+    const repo = match[1];
+    const dir = match[2];
+    if (!result[repo]) result[repo] = [];
+    result[repo].push(dir);
   }
+  for (const match of content.matchAll(/^- ([^/]+?)\/$/gm)) {
+    const repo = match[1];
+    if (!result[repo]) result[repo] = ["*"];
+  }
+  return result;
+}
+
+function writeClaudeLocal(wsDir: string, focusDirs: Record<string, string[]>) {
+  const filePath = join(wsDir, "CLAUDE.local.md");
+  const lines: string[] = [];
+  for (const repo of Object.keys(focusDirs).sort()) {
+    if (focusDirs[repo].includes("*")) {
+      lines.push(`- ${repo}/`);
+    } else {
+      for (const dir of focusDirs[repo]) {
+        lines.push(`- ${repo}/${dir}/`);
+      }
+    }
+  }
+  if (lines.length === 0) {
+    if (existsSync(filePath)) execSync(`rm -f "${filePath}"`, { stdio: "pipe" });
+    return;
+  }
+  const content = `<focus>\nOnly work in these directories:\n${lines.join("\n")}\n</focus>\n`;
+  writeFileSync(filePath, content);
 }
 
 function currentWorkspaceDir(): string | null {
@@ -137,6 +190,7 @@ async function create(source: string, target: string) {
     options: repos.map((r) => ({ value: r, label: r })),
   });
   if (p.isCancel(selected)) { p.cancel("cancelled"); process.exit(0); }
+  selected.sort();
 
   const workspace = await p.text({
     message: "workspace name",
@@ -144,7 +198,7 @@ async function create(source: string, target: string) {
   });
   if (p.isCancel(workspace)) { p.cancel("cancelled"); process.exit(0); }
 
-  const sparseSelections: Record<string, string[]> = {};
+  const focusDirs: Record<string, string[]> = {};
 
   for (const repo of selected) {
     const repoPath = join(source, repo);
@@ -152,17 +206,15 @@ async function create(source: string, target: string) {
     if (dirs.length === 0) continue;
 
     const folders = await p.multiselect({
-      message: `${repo}: folders to include`,
+      message: `${repo}: focus directories`,
       options: [
-        { value: "*", label: "everything (no sparse checkout)" },
+        { value: "*", label: "everything" },
         ...dirs.map((d) => ({ value: d, label: d })),
       ],
     });
     if (p.isCancel(folders)) { p.cancel("cancelled"); process.exit(0); }
 
-    if (!folders.includes("*")) {
-      sparseSelections[repo] = folders;
-    }
+    focusDirs[repo] = folders.includes("*") ? ["*"] : folders;
   }
 
   const wsDir = join(target, workspace);
@@ -180,22 +232,18 @@ async function create(source: string, target: string) {
     try {
       createWorktree(repoPath, dest, workspace);
 
-      if (sparseSelections[repo]) {
-        const folders = sparseSelections[repo];
-        execSync("git sparse-checkout init --cone", { cwd: dest, stdio: "pipe" });
-        execSync(`git sparse-checkout set ${folders.map((f) => `"${f}"`).join(" ")}`, { cwd: dest, stdio: "pipe" });
-        spinner.stop(`${repo} - done (sparse: ${folders.join(", ")})`);
-        results.push({ repo, ok: true, msg: `sparse: ${folders.join(", ")}` });
-      } else {
-        spinner.stop(`${repo} - done`);
-        results.push({ repo, ok: true, msg: "created" });
-      }
+      const focus = focusDirs[repo];
+      const focusLabel = focus.includes("*") ? "everything" : focus.join(", ");
+      spinner.stop(`${repo} - done (focus: ${focusLabel})`);
+      results.push({ repo, ok: true, msg: `focus: ${focusLabel}` });
     } catch (e: any) {
-      const stderr = e.stderr?.toString().trim() || "unknown error";
+      const msg = e.stderr?.toString().trim() || e.message || "unknown error";
       spinner.stop(`${repo} - failed`);
-      results.push({ repo, ok: false, msg: stderr });
+      results.push({ repo, ok: false, msg });
     }
   }
+
+  writeClaudeLocal(wsDir, focusDirs);
 
   p.note(
     results.map((r) => `${r.ok ? "+" : "x"} ${r.repo}: ${r.msg}`).join("\n"),
@@ -228,44 +276,19 @@ async function add(source: string, _target: string) {
   const tracked = existsSync(dest);
   const dirs = findTopLevelDirs(repoPath);
 
-  if (tracked) {
-    if (dirs.length === 0) {
-      p.cancel(`${repo} is already in workspace and has no subdirectories`);
-      process.exit(0);
-    }
-
-    const folders = await p.multiselect({
-      message: `${repo}: folders to add`,
-      options: dirs.map((d) => ({ value: d, label: d })),
-    });
-    if (p.isCancel(folders)) { p.cancel("cancelled"); process.exit(0); }
-
-    const spinner = p.spinner();
-    spinner.start(`adding folders to ${repo}`);
-
-    try {
-      if (!hasSparseCheckout(dest)) {
-        execSync("git sparse-checkout init --cone", { cwd: dest, stdio: "pipe" });
-      }
-      execSync(`git sparse-checkout add ${folders.map((f) => `"${f}"`).join(" ")}`, { cwd: dest, stdio: "pipe" });
-      spinner.stop(`${repo} - added ${folders.join(", ")}`);
-    } catch (e: any) {
-      const stderr = e.stderr?.toString().trim() || "unknown error";
-      spinner.stop(`${repo} - failed: ${stderr}`);
-    }
-  } else {
-    let sparseSelection: string[] | null = null;
+  if (!tracked) {
+    let focusSelection: string[] | null = null;
 
     if (dirs.length > 0) {
       const folders = await p.multiselect({
-        message: `${repo}: folders to include`,
+        message: `${repo}: focus directories`,
         options: [
-          { value: "*", label: "everything (no sparse checkout)" },
+          { value: "*", label: "everything" },
           ...dirs.map((d) => ({ value: d, label: d })),
         ],
       });
       if (p.isCancel(folders)) { p.cancel("cancelled"); process.exit(0); }
-      if (!folders.includes("*")) sparseSelection = folders;
+      focusSelection = folders.includes("*") ? ["*"] : folders;
     }
 
     const spinner = p.spinner();
@@ -273,29 +296,43 @@ async function add(source: string, _target: string) {
 
     try {
       createWorktree(repoPath, dest, wsName);
-
-      if (sparseSelection) {
-        execSync("git sparse-checkout init --cone", { cwd: dest, stdio: "pipe" });
-        execSync(`git sparse-checkout set ${sparseSelection.map((f) => `"${f}"`).join(" ")}`, { cwd: dest, stdio: "pipe" });
-        spinner.stop(`${repo} - done (sparse: ${sparseSelection.join(", ")})`);
-      } else {
-        spinner.stop(`${repo} - done`);
-      }
+      spinner.stop(`${repo} - done`);
     } catch (e: any) {
-      const stderr = e.stderr?.toString().trim() || "unknown error";
+      const stderr = e.stderr?.toString().trim() || e.message || "unknown error";
       spinner.stop(`${repo} - failed: ${stderr}`);
+      p.outro("done");
+      return;
     }
-  }
 
-  p.outro("done");
+    const existing = readFocusDirs(wsDir);
+    existing[repo] = focusSelection || ["*"];
+    writeClaudeLocal(wsDir, existing);
+    const focusLabel = existing[repo].includes("*") ? "everything" : existing[repo].join(", ");
+    p.outro(`${repo} - focus: ${focusLabel}`);
+  } else {
+    if (dirs.length === 0) {
+      p.cancel(`${repo} is already in workspace and has no subdirectories`);
+      process.exit(0);
+    }
+
+    const folders = await p.multiselect({
+      message: `${repo}: focus directories`,
+      options: [
+        { value: "*", label: "everything" },
+        ...dirs.map((d) => ({ value: d, label: d })),
+      ],
+    });
+    if (p.isCancel(folders)) { p.cancel("cancelled"); process.exit(0); }
+
+    const existing = readFocusDirs(wsDir);
+    existing[repo] = folders.includes("*") ? ["*"] : folders;
+    writeClaudeLocal(wsDir, existing);
+    const focusLabel = existing[repo].includes("*") ? "everything" : existing[repo].join(", ");
+    p.outro(`${repo} - focus: ${focusLabel}`);
+  }
 }
 
-async function teardown(source: string, _target: string) {
-  const wsDir = currentWorkspaceDir();
-  if (!wsDir) {
-    p.cancel("not in a workspace directory");
-    process.exit(1);
-  }
+async function deleteWorkspace(source: string, wsDir: string) {
 
   const repos = readdirSync(wsDir).filter((name) => {
     if (name === WS_CONFIG) return false;
@@ -311,7 +348,7 @@ async function teardown(source: string, _target: string) {
     process.exit(1);
   }
 
-  const confirm = await p.confirm({ message: `tear down workspace ${basename(wsDir)}? (${repos.join(", ")})` });
+  const confirm = await p.confirm({ message: `delete workspace ${basename(wsDir)}? (${repos.join(", ")})` });
   if (p.isCancel(confirm) || !confirm) { p.cancel("cancelled"); process.exit(0); }
 
   const results: { repo: string; ok: boolean; msg: string }[] = [];
@@ -331,7 +368,7 @@ async function teardown(source: string, _target: string) {
       spinner.stop(`${repo} - removed`);
       results.push({ repo, ok: true, msg: "removed" });
     } catch (e: any) {
-      const stderr = e.stderr?.toString().trim() || "unknown error";
+      const stderr = e.stderr?.toString().trim() || e.message || "unknown error";
       spinner.stop(`${repo} - failed`);
       results.push({ repo, ok: false, msg: stderr });
     }
@@ -341,7 +378,7 @@ async function teardown(source: string, _target: string) {
 
   p.note(
     results.map((r) => `${r.ok ? "-" : "x"} ${r.repo}: ${r.msg}`).join("\n"),
-    "teardown complete"
+    "delete complete"
   );
   p.outro("done");
 }
@@ -353,7 +390,7 @@ async function main() {
 
   if (command === "create") await create(source, target);
   else if (command === "add") await add(source, target);
-  else if (command === "teardown") await teardown(source, target);
+  else if (command === "delete") await deleteWorkspace(source, target);
 }
 
 main();
