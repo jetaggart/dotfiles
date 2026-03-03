@@ -50,16 +50,23 @@ bindkey -M viins '^P' up-history
 bindkey -M viins '^N' down-history
 autoload -Uz edit-command-line
 zle -N edit-command-line
-bindkey '^X' edit-command-line
+bindkey -M vicmd 'v' edit-command-line
 setopt prompt_subst
 VIM_MODE='[I]'
 zle-keymap-select() {
-  [[ $KEYMAP == vicmd ]] && VIM_MODE='[N]' || VIM_MODE='[I]'
+  if [[ $KEYMAP == vicmd ]]; then
+    VIM_MODE='[N]'
+    printf '\e[2 q'
+  else
+    VIM_MODE='[I]'
+    printf '\e[6 q'
+  fi
   zle reset-prompt
 }
 zle-line-init() {
   zle -K viins
   VIM_MODE='[I]'
+  printf '\e[6 q'
 }
 zle -N zle-keymap-select
 zle -N zle-line-init
