@@ -20,6 +20,17 @@ function findRepos(): string[] {
   }).sort();
 }
 
+function findTopLevelDirs(repoPath: string): string[] {
+  return readdirSync(repoPath).filter((name) => {
+    if (name.startsWith(".")) return false;
+    try {
+      return statSync(join(repoPath, name)).isDirectory();
+    } catch {
+      return false;
+    }
+  }).sort();
+}
+
 async function main() {
   p.intro("lettuce workspace");
 
@@ -60,6 +71,32 @@ async function main() {
     process.exit(0);
   }
 
+  const sparseSelections: Record<string, string[]> = {};
+
+  for (const repo of selected) {
+    const repoPath = join(LETTUCE_DIR, repo);
+    const dirs = findTopLevelDirs(repoPath);
+
+    if (dirs.length === 0) continue;
+
+    const folders = await p.multiselect({
+      message: `${repo}: folders to include (select none for everything)`,
+      options: [
+        { value: "*", label: "everything (no sparse checkout)" },
+        ...dirs.map((d) => ({ value: d, label: d })),
+      ],
+    });
+
+    if (p.isCancel(folders)) {
+      p.cancel("cancelled");
+      process.exit(0);
+    }
+
+    if (!folders.includes("*")) {
+      sparseSelections[repo] = folders;
+    }
+  }
+
   const wsDir = join(WORKSPACES_DIR, workspace);
   execSync(`mkdir -p "${wsDir}"`);
 
@@ -75,8 +112,20 @@ async function main() {
       execSync(`zsh -ic 'cd "${repoPath}" && wtn "${dest}" "${branch}"'`, {
         stdio: "pipe",
       });
-      spinner.stop(`${repo} - done`);
-      results.push({ repo, ok: true, msg: "created" });
+
+      if (sparseSelections[repo]) {
+        const folders = sparseSelections[repo];
+        execSync(`git sparse-checkout init --cone`, { cwd: dest, stdio: "pipe" });
+        execSync(`git sparse-checkout set ${folders.map((f) => `"${f}"`).join(" ")}`, {
+          cwd: dest,
+          stdio: "pipe",
+        });
+        spinner.stop(`${repo} - done (sparse: ${folders.join(", ")})`);
+        results.push({ repo, ok: true, msg: `sparse: ${folders.join(", ")}` });
+      } else {
+        spinner.stop(`${repo} - done`);
+        results.push({ repo, ok: true, msg: "created" });
+      }
     } catch (e: any) {
       const stderr = e.stderr?.toString().trim() || "unknown error";
       spinner.stop(`${repo} - failed`);
