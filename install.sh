@@ -2,6 +2,7 @@
 
 DOTFILES="$HOME/code/dotfiles"
 
+ln -sf "$DOTFILES/gitignore_global" "$HOME/.gitignore_global"
 ln -sf "$DOTFILES/zsh/zshrc" "$HOME/.zshrc"
 ln -sf "$DOTFILES/tmux/tmux.conf" "$HOME/.tmux.conf"
 ln -sf "$DOTFILES/psql/psqlrc" "$HOME/.psqlrc"

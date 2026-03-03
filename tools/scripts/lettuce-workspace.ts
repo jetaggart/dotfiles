@@ -39,9 +39,20 @@ async function main() {
     process.exit(0);
   }
 
+  const workspace = await p.text({
+    message: "workspace name",
+    validate: (v) => (v.length === 0 ? "required" : undefined),
+  });
+
+  if (p.isCancel(workspace)) {
+    p.cancel("cancelled");
+    process.exit(0);
+  }
+
   const branch = await p.text({
     message: "branch name",
-    validate: (v) => (v.length === 0 ? "required" : undefined),
+    defaultValue: workspace,
+    initialValue: workspace,
   });
 
   if (p.isCancel(branch)) {
@@ -49,7 +60,7 @@ async function main() {
     process.exit(0);
   }
 
-  const wsDir = join(WORKSPACES_DIR, branch);
+  const wsDir = join(WORKSPACES_DIR, workspace);
   execSync(`mkdir -p "${wsDir}"`);
 
   const results: { repo: string; ok: boolean; msg: string }[] = [];
@@ -78,7 +89,7 @@ async function main() {
     `workspace: ${wsDir}`
   );
 
-  p.outro("done");
+  p.outro(`cd ${wsDir}`);
 }
 
 main();

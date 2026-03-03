@@ -71,3 +71,16 @@ When creating CLAUDE.md, CLAUDE.development.md, or skill files for any project:
 <committing>
 Always use the /commit skill when creating git commits. Never commit directly with git commands.
 </committing>
+
+<me_directory>
+Projects may have a `.me/` directory in the project root. This is a personal git repo (globally gitignored) for versioning project-specific Claude config and scripts without polluting the project repo.
+
+Contents symlinked back into the project via `.me/install.sh`:
+- `CLAUDE.local.md` → project root (project-specific Claude instructions)
+- `skills/` → `.claude/skills/` (project-specific skills)
+- `scripts/` → personal shell scripts, tools, and automation for the project
+
+The `scripts/` directory can contain anything useful for the project: build helpers, data seeders, environment setup, deploy shortcuts, debug utilities. These are personal tools, not shared with the team.
+
+Use the `/me-claude` skill to set up a `.me/` directory in a new project.
+</me_directory>

@@ -8,7 +8,7 @@ Create a `.me/` directory in the project root that acts as a personal git repo f
 </purpose>
 
 <prerequisites>
-The global `~/.gitignore` must contain `.me/` and `Claude.local.md` entries. Verify before proceeding, warn the user if missing.
+The global gitignore (`~/.gitignore_global`) must contain `.me/` and `Claude.local.md` entries. Verify before proceeding, warn the user if missing.
 </prerequisites>
 
 <structure>
