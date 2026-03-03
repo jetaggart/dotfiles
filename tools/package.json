@@ -5,7 +5,8 @@
   "scripts": {
     "build:pom": "bun build scripts/pom.tsx --outdir dist --target bun && cp dist/pom.js ~/bin/tools/pom && chmod +x ~/bin/tools/pom",
     "build:lettuce-workspace": "bun build scripts/lettuce-workspace.ts --outdir dist --target bun && cp dist/lettuce-workspace.js ~/bin/tools/lettuce-workspace && chmod +x ~/bin/tools/lettuce-workspace",
-    "build": "mkdir -p ~/bin/tools && bun run build:pom && bun run build:lettuce-workspace",
+    "build:lettuce-workspace-teardown": "bun build scripts/lettuce-workspace-teardown.ts --outdir dist --target bun && cp dist/lettuce-workspace-teardown.js ~/bin/tools/lettuce-workspace-teardown && chmod +x ~/bin/tools/lettuce-workspace-teardown",
+    "build": "mkdir -p ~/bin/tools && bun run build:pom && bun run build:lettuce-workspace && bun run build:lettuce-workspace-teardown",
     "install-cli": "bun run build"
   },
   "dependencies": {
