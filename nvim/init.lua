@@ -101,10 +101,19 @@ vim.g.have_nerd_font = false
 vim.diagnostic.enable(false)
 
 vim.o.autoread = true
+vim.o.autowriteall = true
+vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave', 'CursorHold', 'InsertLeave' }, {
+  pattern = '*',
+  command = 'silent! wall',
+})
 vim.o.grepprg = 'rg --vimgrep --smart-case'
 vim.o.grepformat = '%f:%l:%c:%m'
 vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'CursorHold' }, {
   command = 'silent! checktime',
+})
+vim.api.nvim_create_autocmd('FileChangedShell', {
+  pattern = '*',
+  command = 'let v:fcs_choice = "reload"',
 })
 local timer = vim.uv.new_timer()
 timer:start(0, 1000, vim.schedule_wrap(function()
@@ -182,6 +191,7 @@ vim.o.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<leader>cp', function() vim.fn.setreg('+', vim.fn.expand('%')) end, { desc = '[C]opy [P]ath (relative)' })
+vim.keymap.set({ 'n', 'i' }, '<A-s>', '<cmd>w<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
