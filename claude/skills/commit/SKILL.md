@@ -15,7 +15,7 @@ user_invocable: true
 3. For each repo, draft a commit message:
    - If the branch name contains a JIRA identifier (e.g. LTC-1234, PROJ-567), prefix the title with it in brackets: `[LTC-1234] short message`
    - One short lowercase title (after any JIRA prefix), no period, imperative mood
-   - Keep the title under 72 characters
+   - Keep the title under 72 characters. If the natural message exceeds 72, split into a short title and a body with the details.
    - Brief and direct, sound like a human wrote it
    - No prefixes like "feat:" or "fix:" unless the repo already uses them
    - No AI attribution of any kind
