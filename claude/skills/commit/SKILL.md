@@ -6,10 +6,9 @@ user_invocable: true
 # Commit Skill
 
 <steps>
-1. Detect repos involved in the current changes:
-   - The working directory may not be a git repo itself. It may be a plain directory containing multiple subdirectories that are each independent git repos.
-   - Check if the current directory is a git repo. If not, scan immediate subdirectories for `.git` directories.
-   - For each repo with changes, run `git diff`, `git diff --cached`, `git status`, and `git branch --show-current` in parallel.
+1. Gather the state of changes you worked on:
+   - Run `git diff`, `git diff --cached`, `git status`, and `git branch --show-current` in parallel.
+   - Focus on files you changed during this session. Do not hunt for other repos or unrelated changes.
 
 2. For each repo, check if the current branch is `main` or `master`. If so, prompt the user to confirm they want to commit directly to main before proceeding. If they decline, stop.
 
