@@ -409,3 +409,11 @@ k() {
     print -z "$result"
   fi
 }
+
+q() {
+  claude -p \
+    --model sonnet \
+    --no-session-persistence \
+    --system-prompt "Answer concisely. No markdown formatting. Plain text only." \
+    "$*" 2>/dev/null
+}

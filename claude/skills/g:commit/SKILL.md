@@ -10,7 +10,7 @@ user_invocable: true
    - Run `git diff`, `git diff --cached`, `git status`, and `git branch --show-current` in parallel.
    - Focus on files you changed during this session. Do not hunt for other repos or unrelated changes.
 
-2. For each repo, check if the current branch is `main` or `master`. If so, prompt the user to confirm they want to commit directly to main before proceeding. If they decline, stop.
+2. If the current branch is `main` or `master`, immediately ask the user with AskUserQuestion: "You're on main, proceed?" with options "Yes" and "No". If they say no, stop. Do this before any other work.
 
 3. For each repo, draft a commit message:
    - If the branch name contains a JIRA identifier (e.g. LTC-1234, PROJ-567), prefix the title with it in brackets: `[LTC-1234] short message`
