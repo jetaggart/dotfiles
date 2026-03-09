@@ -69,7 +69,7 @@ function readWsConfig(): { source: string; target: string } | null {
     const configPath = join(dir, WS_CONFIG);
     if (existsSync(configPath)) {
       const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      return { source: config.source, target: join(dir, "..") };
+      return { source: config.source, target: dir };
     }
     const parent = join(dir, "..");
     if (parent === dir) break;
@@ -117,15 +117,18 @@ function createWorktree(repoPath: string, dest: string, branch: string) {
   for (const f of ignored) {
     const src = join(repoPath, f);
     const dst = join(dest, f);
-    const stat = lstatSync(src);
-    mkdirSync(join(dest, dirname(f)), { recursive: true });
-    if (stat.isSymbolicLink()) {
-      symlinkSync(readlinkSync(src), dst);
-    } else if (stat.isDirectory()) {
-      execSync(`cp -a "${src}" "${dst}"`, { stdio: "pipe" });
-    } else if (stat.isFile()) {
-      copyFileSync(src, dst);
-    }
+    try {
+      const stat = lstatSync(src);
+      mkdirSync(join(dest, dirname(f)), { recursive: true });
+      if (existsSync(dst)) continue;
+      if (stat.isSymbolicLink()) {
+        symlinkSync(readlinkSync(src), dst);
+      } else if (stat.isDirectory()) {
+        execSync(`cp -a "${src}" "${dst}"`, { stdio: "pipe" });
+      } else if (stat.isFile()) {
+        copyFileSync(src, dst);
+      }
+    } catch {}
   }
 }
 
@@ -167,6 +170,26 @@ function writeClaudeLocal(wsDir: string, focusDirs: Record<string, string[]>) {
   writeFileSync(filePath, content);
 }
 
+function writeCodeWorkspace(wsDir: string, focusDirs: Record<string, string[]>) {
+  const folders: { path: string; name: string }[] = [];
+  for (const repo of Object.keys(focusDirs).sort()) {
+    if (focusDirs[repo].includes("*")) {
+      folders.push({ path: repo, name: repo });
+    } else {
+      for (const dir of focusDirs[repo]) {
+        folders.push({ path: join(repo, dir), name: `${repo}/${dir}` });
+      }
+    }
+  }
+  const workspace = {
+    folders,
+    settings: {
+      "files.exclude": { "**/.git": true, ".ws.json": true },
+    },
+  };
+  writeFileSync(join(wsDir, `${basename(wsDir)}.code-workspace`), JSON.stringify(workspace, null, 2) + "\n");
+}
+
 function currentWorkspaceDir(): string | null {
   let dir = process.cwd();
   while (true) {
@@ -203,7 +226,10 @@ async function create(source: string, target: string) {
   for (const repo of selected) {
     const repoPath = join(source, repo);
     const dirs = findTopLevelDirs(repoPath);
-    if (dirs.length === 0) continue;
+    if (dirs.length === 0) {
+      focusDirs[repo] = ["*"];
+      continue;
+    }
 
     const folders = await p.multiselect({
       message: `${repo}: focus directories`,
@@ -249,6 +275,7 @@ async function create(source: string, target: string) {
   }
 
   writeClaudeLocal(wsDir, focusDirs);
+  writeCodeWorkspace(wsDir, focusDirs);
 
   p.note(
     results.map((r) => `${r.ok ? "+" : "x"} ${r.repo}: ${r.msg}`).join("\n"),
@@ -312,6 +339,7 @@ async function add(source: string, _target: string) {
     const existing = readFocusDirs(wsDir);
     existing[repo] = focusSelection || ["*"];
     writeClaudeLocal(wsDir, existing);
+    writeCodeWorkspace(wsDir, existing);
     const focusLabel = existing[repo].includes("*") ? "everything" : existing[repo].join(", ");
     p.outro(`${repo} - focus: ${focusLabel}`);
   } else {
@@ -332,6 +360,7 @@ async function add(source: string, _target: string) {
     const existing = readFocusDirs(wsDir);
     existing[repo] = folders.includes("*") ? ["*"] : folders;
     writeClaudeLocal(wsDir, existing);
+    writeCodeWorkspace(wsDir, existing);
     const focusLabel = existing[repo].includes("*") ? "everything" : existing[repo].join(", ");
     p.outro(`${repo} - focus: ${focusLabel}`);
   }
