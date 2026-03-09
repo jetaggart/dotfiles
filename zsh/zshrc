@@ -397,3 +397,15 @@ _me() {
   done
 }
 compdef _me me
+
+k() {
+  local result
+  result=$(claude -p \
+    --model haiku \
+    --no-session-persistence \
+    --system-prompt "You translate natural language to a single shell command for macOS with zsh. Output ONLY the command. No explanation, no markdown, no code fences." \
+    "$*" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    print -z "$result"
+  fi
+}
