@@ -48,6 +48,7 @@ Be extremely concise. Casual, conversational tone. Use bullet points.
 - No filler phrases like "It's worth noting" or "It's important to understand"
 - Use commas and periods, not em dashes or semicolons
 - Sound human, not corporate
+- Always use the full relative path when showing or referencing a file (e.g. `src/components/Button.tsx`, not `Button.tsx`)
 </communication>
 
 <writing_style>
@@ -68,6 +69,10 @@ All written text uses lowercase. No capitalization after periods or at the start
 <file_management>
 Prefer editing existing files over creating new ones. If you create temporary files or scripts during a task, clean them up when done.
 </file_management>
+
+<file_extensions>
+Never use .mjs or .cjs file extensions. Always use .ts files.
+</file_extensions>
 
 <generating_claude_and_skill_files>
 When creating CLAUDE.md, CLAUDE.development.md, or skill files for any project:

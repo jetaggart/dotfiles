@@ -27,13 +27,10 @@ user_invocable: true
 
    Options:
    - "Approve" - commit all as-is
-   - "Approve and push" - commit all, then push each to remote
    - "Expand" - add bullet-point bodies summarizing what changed and why, then present again
    - "Rewrite" - discuss what to change, draft new messages, then loop back to step 4
 
-5. Once approved, for each repo: stage relevant files with `git add` by name (not `git add -A`), then commit. Pass the commit message using the `-m` flag with a plain string. Do not use shell expansions like `$()`, heredocs, or subshells in any git commands.
+5. Once approved, for each repo: stage relevant files with `git add` by name (not `git add -A`), then commit. Pass the commit message using the `-m` flag with a plain string. Do not use shell expansions like `$()`, heredocs, or subshells in any git commands. Do not push.
 
-6. If "Approve and push" was chosen, run `git push` for each repo.
-
-7. Show `git log --oneline -1` for each repo to confirm.
+6. Show `git log --oneline -1` for each repo to confirm.
 </steps>

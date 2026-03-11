@@ -6,10 +6,7 @@ user_invocable: true
 # Code Fix
 
 <steps>
-1. Read the project's CLAUDE.md and CLAUDE.local.md if they exist. Look for:
-   - lint, format, build, or compile commands
-   - project-specific conventions or patterns
-   - any referenced skills that might be relevant
+1. Read these files if they exist in the project root: CLAUDE.md, CLAUDE.local.md, CLAUDE.development.md. Follow any instructions in them. Extract any specific lint, format, typecheck, build, or compile commands they define. These commands take priority over anything discovered in step 4.
 
 2. Gather context. Run in parallel:
    - `git diff` and `git diff --cached` to see current changes
