@@ -281,7 +281,12 @@ async function create(source: string, target: string) {
     results.map((r) => `${r.ok ? "+" : "x"} ${r.repo}: ${r.msg}`).join("\n"),
     `workspace: ${wsDir}`
   );
-  p.outro(`cd ${wsDir}`);
+  if (process.env.TMUX) {
+    execSync(`tmux new-window -c "${wsDir}" -n "${workspace}"`, { stdio: "pipe" });
+    p.outro(`opened tmux window: ${workspace}`);
+  } else {
+    p.outro(`cd ${wsDir}`);
+  }
 }
 
 async function add(source: string, _target: string) {
