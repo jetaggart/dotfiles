@@ -387,8 +387,24 @@ async function deleteWorkspace(source: string, wsDir: string) {
     process.exit(1);
   }
 
-  const confirm = await p.confirm({ message: `delete workspace ${basename(wsDir)}? (${repos.join(", ")})` });
-  if (p.isCancel(confirm) || !confirm) { p.cancel("cancelled"); process.exit(0); }
+  const dirtyRepos = repos.filter((repo) => {
+    const worktreePath = join(wsDir, repo);
+    try {
+      const status = execSync(`git -C "${worktreePath}" status --porcelain`, { stdio: "pipe" }).toString().trim();
+      return status.length > 0;
+    } catch {
+      return false;
+    }
+  });
+
+  if (dirtyRepos.length > 0) {
+    p.log.warn(`uncommitted changes in: ${dirtyRepos.join(", ")}`);
+    const force = await p.confirm({ message: "delete anyway? uncommitted changes will be lost" });
+    if (p.isCancel(force) || !force) { p.cancel("cancelled"); process.exit(0); }
+  } else {
+    const confirm = await p.confirm({ message: `delete workspace ${basename(wsDir)}? (${repos.join(", ")})` });
+    if (p.isCancel(confirm) || !confirm) { p.cancel("cancelled"); process.exit(0); }
+  }
 
   const results: { repo: string; ok: boolean; msg: string }[] = [];
 

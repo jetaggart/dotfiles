@@ -1,5 +1,5 @@
 ---
-name: gh:pr:summarize
+name: github:pr:summarize
 description: Summarize a GitHub PR with full context including diffs, comments, and review conversations.
 user_invocable: true
 args: <url>

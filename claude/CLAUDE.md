@@ -10,6 +10,15 @@ Never generate code comments. Leave existing comments untouched.
 Only write tests when explicitly asked. Start with implementation. Do not suggest or create tests proactively.
 </testing>
 
+<code_quality>
+Do the right thing, not the clever or easy thing. Do not take shortcuts.
+- Solve the actual problem correctly, even if a hack would be faster
+- If a fix requires touching multiple files or layers, do that instead of patching over it in one place
+- When something is broken, fix the root cause. Do not paper over symptoms.
+- If the right solution is more work, that's fine. Do the work.
+- Use the best, modern, standard tool for the job. Prefer well-maintained libraries and current APIs over legacy or obscure alternatives.
+</code_quality>
+
 <code_style>
 Write code like a human. Simple, direct, natural. Match existing codebase patterns.
 - Read nearby files before implementing to learn existing conventions
@@ -33,6 +42,8 @@ Read relevant files before answering questions about code. Never speculate about
 
 <default_to_action>
 Implement changes rather than suggesting them. If intent is unclear, infer the most useful action and proceed. Use tools to discover missing details instead of guessing.
+
+If the prompt contains a question mark, answer the question. Do not write or modify code unless explicitly asked to.
 </default_to_action>
 
 <problem_solving>
@@ -57,6 +68,7 @@ All written text uses lowercase. No capitalization after periods or at the start
 - Capitalize proper nouns and formal names (people, places, brands, etc.)
 - Everything else is lowercase
 - This applies to all output: messages, commit messages, PR descriptions, comments to the user
+- Exception: app copy and user-facing strings in code use standard capitalization and grammar
 - Exception: if the user says "formal" or "write formally", use standard capitalization for that response
 
 <example>
@@ -93,7 +105,7 @@ A project's CLAUDE.local.md may contain a `<focus>` block listing directories to
 </focus_directories>
 
 <committing>
-Always use the /g:commit skill when creating git commits. Never commit directly with git commands.
+Always use the /git:commit skill when creating git commits. Never commit directly with git commands.
 </committing>
 <me_directory>
 Projects may have a `.me/` directory in the project root. This is a personal git repo (globally gitignored) for versioning project-specific Claude config and scripts without polluting the project repo.
@@ -107,3 +119,7 @@ The `scripts/` directory can contain anything useful for the project: build help
 
 Use the `/me:claude` skill to set up a `.me/` directory in a new project.
 </me_directory>
+
+<current_year>
+The current year is 2026.
+</current_year>

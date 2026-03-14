@@ -46,7 +46,7 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 <claude_config>
 - `claude/CLAUDE.md` - global Claude Code instructions for all projects
 - `claude/settings.json` - Claude Code settings and pre-approved commands
-- `claude/skills/` - global skills (g:commit, gh:pr, gh:lookup, me:claude, sub:agent, simplify, python, react)
+- `claude/skills/` - global skills (git:commit, github:pr, github:lookup, me:claude, sub:agent, simplify, python, react)
 </claude_config>
 
 ## Tools (`tools/`)
@@ -55,6 +55,11 @@ Bun TypeScript projects compiled to standalone scripts in `~/bin/tools/`.
 
 <tools>
 - `pom` - pomodoro timer with terminal UI (React/Ink). Usage: `pom [minutes] [task]` or `pom -h [count]` for history. Saves sessions to `~/.pom/history.csv`.
+- `query` (aliased as `q` with `noglob`) - quick question tool using Claude. Supports conversation continuation. Stores history in `~/.local/share/q/`.
+  - `q <question>` or `q n <question>` - new question (opus)
+  - `q c <question>` - continue previous conversation (opus)
+  - `q q <question>` - quick one-shot (sonnet)
+  - `q d` - delete current conversation
 - `ws` - workspace manager using git worktrees. Creates isolated workspaces with focused directory subsets. Generates `CLAUDE.local.md` with `<focus>` blocks. Symlinks the source's `CLAUDE.md` into the workspace if it exists.
   - `ws create <preset>` or `ws create <source> <target>` - create workspace
   - `ws add` - add repo to current workspace

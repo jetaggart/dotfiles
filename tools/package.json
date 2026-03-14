@@ -5,7 +5,8 @@
   "scripts": {
     "build:pom": "bun build scripts/pom.tsx --outdir dist --target bun && cp dist/pom.js ~/bin/tools/pom && chmod +x ~/bin/tools/pom",
     "build:ws": "bun build scripts/ws.ts --outdir dist --target bun && cp dist/ws.js ~/bin/tools/ws && chmod +x ~/bin/tools/ws",
-    "build": "mkdir -p ~/bin/tools && bun run build:pom && bun run build:ws",
+    "build:query": "bun build scripts/query.ts --outdir dist --target bun && cp dist/query.js ~/bin/tools/query && chmod +x ~/bin/tools/query",
+    "build": "mkdir -p ~/bin/tools && bun run build:pom && bun run build:ws && bun run build:query",
     "install-cli": "bun run build"
   },
   "dependencies": {

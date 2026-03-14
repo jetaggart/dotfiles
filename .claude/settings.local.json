@@ -9,7 +9,9 @@
       "Bash(git commit:*)",
       "Bash(brew list:*)",
       "Bash(git push:*)",
-      "Bash(./install.sh:*)"
+      "Bash(./install.sh:*)",
+      "Bash(pspg:*)",
+      "Bash(git:*)"
     ]
   }
 }
