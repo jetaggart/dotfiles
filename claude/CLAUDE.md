@@ -28,12 +28,14 @@ Write code like a human. Simple, direct, natural. Match existing codebase patter
 </code_style>
 
 <avoid_overengineering>
-Only make changes directly requested or clearly necessary.
+Only make changes directly requested or clearly necessary. Stick strictly to what was discussed.
 - Do not add features, refactor, or "improve" beyond what was asked
+- Do not speculate on what the user might need next or add things "just in case"
 - Do not add docstrings, type annotations, or error handling to untouched code
 - Do not create helpers or abstractions for one-time operations
 - Do not design for hypothetical future requirements
 - Only validate at system boundaries, not internal code
+- Find the simplest correct solution that follows best practices. If you catch yourself thinking "the user might also want..." stop. They will ask if they want more.
 </avoid_overengineering>
 
 <investigate_before_answering>
@@ -81,6 +83,10 @@ All written text uses lowercase. No capitalization after periods or at the start
 <file_management>
 Prefer editing existing files over creating new ones. If you create temporary files or scripts during a task, clean them up when done.
 </file_management>
+
+<memory>
+Do not use the auto memory directory. All project knowledge belongs in CLAUDE.md files checked into the repo.
+</memory>
 
 <file_extensions>
 Never use .mjs or .cjs file extensions. Always use .ts files.

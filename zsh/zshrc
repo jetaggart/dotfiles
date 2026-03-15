@@ -419,7 +419,7 @@ k() {
   result=$(claude -p \
     --model haiku \
     --no-session-persistence \
-    --system-prompt "You translate natural language to a single shell command for macOS with zsh. Output ONLY the command. No explanation, no markdown, no code fences." \
+    --system-prompt "You translate natural language to a single one-line shell command for macOS with zsh. Output ONLY the command on a single line. No explanation, no markdown, no code fences, no newlines. Never ask questions or seek clarification. If ambiguous, give your best guess." \
     "$*" 2>/dev/null)
   if [[ -n "$result" ]]; then
     print -z "$result"

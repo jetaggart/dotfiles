@@ -101,6 +101,7 @@ vim.g.have_nerd_font = false
 vim.diagnostic.enable(false)
 
 vim.o.autoread = true
+vim.o.swapfile = false
 vim.o.autowriteall = true
 vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave', 'CursorHold', 'InsertLeave' }, {
   pattern = '*',
