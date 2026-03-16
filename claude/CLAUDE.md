@@ -42,11 +42,11 @@ Only make changes directly requested or clearly necessary. Stick strictly to wha
 Read relevant files before answering questions about code. Never speculate about code you haven't opened. Give grounded answers only.
 </investigate_before_answering>
 
-<default_to_action>
-Implement changes rather than suggesting them. If intent is unclear, infer the most useful action and proceed. Use tools to discover missing details instead of guessing.
+<questions_vs_actions>
+If the prompt contains a question mark or the word "discuss", answer and discuss only. Do not write, edit, or modify any code or files. Read files to inform your answer, but make no changes.
 
-If the prompt contains a question mark, answer the question. Do not write or modify code unless explicitly asked to.
-</default_to_action>
+When the prompt has no question mark, default to action. Implement changes rather than suggesting them. If intent is unclear, infer the most useful action and proceed. Use tools to discover missing details instead of guessing.
+</questions_vs_actions>
 
 <problem_solving>
 Stop and ask when confused, going in circles, or about to start a deep debugging rabbit hole. Only dive deep when explicitly told to.

@@ -104,6 +104,38 @@ function findTopLevelDirs(repoPath: string): string[] {
   }).sort();
 }
 
+function getDefaultBranch(repoPath: string): string {
+  try {
+    const ref = execSync("git symbolic-ref refs/remotes/origin/HEAD", { cwd: repoPath, stdio: "pipe" }).toString().trim();
+    return ref.replace("refs/remotes/origin/", "");
+  } catch {
+    return "main";
+  }
+}
+
+function prepareRepo(repoPath: string): { ok: boolean; msg: string } {
+  const defaultBranch = getDefaultBranch(repoPath);
+  const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: repoPath, stdio: "pipe" }).toString().trim();
+
+  if (currentBranch !== defaultBranch) {
+    return { ok: false, msg: `on branch '${currentBranch}', expected '${defaultBranch}'` };
+  }
+
+  const status = execSync("git status --porcelain", { cwd: repoPath, stdio: "pipe" }).toString().trim();
+  if (status.length > 0) {
+    return { ok: false, msg: "has uncommitted changes" };
+  }
+
+  try {
+    execSync(`git pull --rebase`, { cwd: repoPath, stdio: "pipe" });
+  } catch (e: any) {
+    const stderr = e.stderr?.toString().trim() || e.message || "unknown error";
+    return { ok: false, msg: `pull failed: ${stderr}` };
+  }
+
+  return { ok: true, msg: "ready" };
+}
+
 function createWorktree(repoPath: string, dest: string, branch: string) {
   try {
     execSync(`git worktree add "${dest}" -b "${branch}"`, { cwd: repoPath, stdio: "pipe" });
@@ -243,6 +275,23 @@ async function create(source: string, target: string) {
     focusDirs[repo] = folders.includes("*") ? ["*"] : folders;
   }
 
+  const prepSpinner = p.spinner();
+  prepSpinner.start("checking repos");
+  const notReady: string[] = [];
+  for (const repo of selected) {
+    const check = prepareRepo(join(source, repo));
+    if (!check.ok) {
+      notReady.push(`${repo}: ${check.msg}`);
+    }
+  }
+  prepSpinner.stop(notReady.length === 0 ? "all repos ready" : "some repos not ready");
+
+  if (notReady.length > 0) {
+    p.log.error(notReady.join("\n"));
+    p.cancel("fix the issues above and try again");
+    process.exit(1);
+  }
+
   const wsDir = join(target, workspace);
   execSync(`mkdir -p "${wsDir}"`);
   writeWsConfig(wsDir, source);
@@ -314,6 +363,12 @@ async function add(source: string, _target: string) {
   const dirs = findTopLevelDirs(repoPath);
 
   if (!tracked) {
+    const check = prepareRepo(repoPath);
+    if (!check.ok) {
+      p.cancel(`${repo}: ${check.msg}`);
+      process.exit(1);
+    }
+
     let focusSelection: string[] | null = null;
 
     if (dirs.length > 0) {
