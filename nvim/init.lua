@@ -163,7 +163,7 @@ vim.o.splitbelow = true
 --   See `:help lua-options`
 --   and `:help lua-options-guide`
 vim.o.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = { tab = '  ', trail = '·', nbsp = '␣' }
 
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
@@ -186,6 +186,16 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.bo.shiftwidth = 2
     vim.bo.softtabstop = 2
     vim.bo.expandtab = true
+  end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'go', 'gomod', 'gowork', 'gotmpl' },
+  callback = function()
+    vim.bo.tabstop = 4
+    vim.bo.shiftwidth = 4
+    vim.bo.softtabstop = 4
+    vim.bo.expandtab = false
   end,
 })
 
@@ -757,7 +767,29 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         ts_ls = {},
-        gopls = {},
+        gopls = {
+          settings = {
+            gopls = {
+              gofumpt = true,
+              staticcheck = true,
+              analyses = {
+                unusedparams = true,
+                unusedwrite = true,
+                useany = true,
+                nilness = true,
+              },
+              hints = {
+                assignVariableTypes = true,
+                compositeLiteralFields = true,
+                compositeLiteralTypes = true,
+                constantValues = true,
+                functionTypeParameters = true,
+                parameterNames = true,
+                rangeVariableTypes = true,
+              },
+            },
+          },
+        },
         pyright = {
           root_dir = require('lspconfig.util').root_pattern('pyrightconfig.json', 'pyproject.toml', 'setup.py', 'setup.cfg', '.venv'),
           capabilities = (function()
@@ -809,6 +841,7 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'goimports',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -860,6 +893,7 @@ require('lazy').setup({
         end
       end,
       formatters_by_ft = {
+        go = { 'goimports', 'gofumpt' },
         lua = { 'stylua' },
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
@@ -1007,6 +1041,7 @@ require('lazy').setup({
       'antoinemadec/FixCursorHold.nvim',
       'nvim-treesitter/nvim-treesitter',
       'nvim-neotest/neotest-python',
+      'nvim-neotest/neotest-go',
       'nvim-neotest/neotest-jest',
       'marilari88/neotest-vitest',
     },
@@ -1063,6 +1098,9 @@ require('lazy').setup({
             root = find_project_root,
             cwd = find_project_root,
           }),
+          require('neotest-go')({
+            root = find_project_root,
+          }),
         },
       })
     end,
@@ -1116,7 +1154,7 @@ require('lazy').setup({
 
       require('nvim-treesitter.configs').setup {
         parser_install_dir = parser_install_dir,
-        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'typescript', 'tsx' },
+        ensure_installed = { 'bash', 'c', 'diff', 'go', 'gomod', 'gosum', 'gotmpl', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'typescript', 'tsx' },
         auto_install = true,
         highlight = {
           enable = true,
