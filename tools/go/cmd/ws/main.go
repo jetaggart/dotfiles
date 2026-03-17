@@ -87,7 +87,9 @@ func findWsDir() (source, wsDir string, ok bool) {
 	for {
 		configPath := filepath.Join(dir, wsConfig)
 		if data, err := os.ReadFile(configPath); err == nil {
-			var cfg struct{ Source string `json:"source"` }
+			var cfg struct {
+				Source string `json:"source"`
+			}
 			if json.Unmarshal(data, &cfg) == nil {
 				return cfg.Source, dir, true
 			}
@@ -998,7 +1000,9 @@ func main() {
 			fmt.Fprintf(os.Stderr, "not a workspace directory (no .ws.json in %s)\n", wsDir)
 			os.Exit(1)
 		}
-		var cfg struct{ Source string `json:"source"` }
+		var cfg struct {
+			Source string `json:"source"`
+		}
 		json.Unmarshal(data, &cfg)
 		cmdDelete(cfg.Source, wsDir)
 

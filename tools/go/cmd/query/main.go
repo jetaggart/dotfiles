@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	qDir       = filepath.Join(os.Getenv("HOME"), ".local", "share", "q")
-	convoFile  = filepath.Join(qDir, "current")
+	qDir         = filepath.Join(os.Getenv("HOME"), ".local", "share", "q")
+	convoFile    = filepath.Join(qDir, "current")
 	systemPrompt = "Answer concisely. No markdown formatting. Plain text only."
 )
 

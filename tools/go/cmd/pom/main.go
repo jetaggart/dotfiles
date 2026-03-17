@@ -22,7 +22,21 @@ var (
 	gray   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	red    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	bold   = lipgloss.NewStyle().Bold(true)
+
+	boxStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("6")).
+			Padding(1, 3)
+
+	timerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("6")).
+			Bold(true)
+
+	dimStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("8")).
+			Italic(true)
 )
 
 type mode int
@@ -166,14 +180,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	var s strings.Builder
-	s.WriteString("\n")
+
+	var content strings.Builder
 
 	switch m.mode {
 	case modeEditTask:
-		s.WriteString(yellow.Bold(true).Render("Edit task:") + "\n")
-		s.WriteString(cyan.Render(m.taskBuf) + gray.Render("_") + "\n")
-		s.WriteString("\n")
-		s.WriteString(gray.Render("Enter to save, Esc to cancel") + "\n")
+		content.WriteString(yellow.Bold(true).Render("Edit task:") + "\n\n")
+		content.WriteString(cyan.Render(m.taskBuf) + gray.Render("_") + "\n\n")
+		content.WriteString(dimStyle.Render("enter to save, esc to cancel"))
 
 	case modeBreak:
 		breakElapsed := int(m.now.Sub(m.breakStart).Seconds())
@@ -182,17 +196,17 @@ func (m model) View() string {
 			nextMinutes = m.inputBuf
 		}
 
-		s.WriteString(green.Bold(true).Render("Break time!") + "\n")
-		s.WriteString(gray.Render("Break: ") + yellow.Bold(true).Render(formatRemaining(breakElapsed)) + "\n")
+		content.WriteString(green.Bold(true).Render("Break time!") + "\n\n")
+		content.WriteString(gray.Render("break  ") + yellow.Bold(true).Render(formatRemaining(breakElapsed)) + "\n")
 		if m.task != "" {
-			s.WriteString(gray.Render("Task: "+m.task) + "\n")
+			content.WriteString(gray.Render("task   ") + cyan.Render(m.task) + "\n")
 		}
-		s.WriteString("\n")
-		s.WriteString(gray.Render("Press ") + cyan.Bold(true).Render("Enter") + gray.Render(" to start ") + green.Bold(true).Render(nextMinutes+"m") + gray.Render(" pom") + "\n")
+		content.WriteString("\n")
+		content.WriteString(dimStyle.Render("enter") + gray.Render(" start ") + green.Bold(true).Render(nextMinutes+"m") + gray.Render(" pom") + "\n")
 		if m.inputBuf != "" {
-			s.WriteString(gray.Render("(type numbers to change duration)") + "\n")
+			content.WriteString(dimStyle.Render("type numbers to change duration") + "\n")
 		}
-		s.WriteString(gray.Render("Press t to edit task, Esc to quit") + "\n")
+		content.WriteString(dimStyle.Render("t") + gray.Render(" edit task  ") + dimStyle.Render("esc") + gray.Render(" quit"))
 
 	case modePom:
 		total := m.minutes * 60
@@ -207,27 +221,26 @@ func (m model) View() string {
 		}
 
 		endTime := m.startTime.Add(time.Duration(m.minutes) * time.Minute)
-		barWidth := m.width - 10
-		if barWidth > 50 {
-			barWidth = 50
+		barWidth := m.width - 18
+		if barWidth > 40 {
+			barWidth = 40
 		}
 		if barWidth < 10 {
 			barWidth = 10
 		}
 
-		s.WriteString(gray.Render(formatTime(m.startTime)) + gray.Render(" - ") + green.Render(formatTime(endTime)) + "\n")
-		s.WriteString(cyan.Bold(true).Render(formatRemaining(remaining)) + "\n")
-		s.WriteString(gradientBar(percent, barWidth) + "\n")
-		pctStr := fmt.Sprintf("%d%%", percent)
-		pad := barWidth - len(pctStr)
-		if pad < 0 {
-			pad = 0
-		}
-		s.WriteString(strings.Repeat(" ", pad) + pctStr + "\n")
+		timeRange := gray.Render(formatTime(m.startTime)) + gray.Render(" → ") + green.Render(formatTime(endTime))
+		content.WriteString(timeRange + "\n\n")
+		content.WriteString(timerStyle.Render(formatRemainingLarge(remaining)) + "\n\n")
+		content.WriteString(gradientBar(percent, barWidth) + " " + dimStyle.Render(fmt.Sprintf("%d%%", percent)) + "\n")
 		if m.task != "" {
-			s.WriteString(gray.Render(m.task) + "\n")
+			content.WriteString("\n" + gray.Render(m.task))
 		}
+		content.WriteString("\n\n" + dimStyle.Render("e") + gray.Render(" end early  ") + dimStyle.Render("ctrl+c") + gray.Render(" quit"))
 	}
+
+	s.WriteString(boxStyle.Render(content.String()))
+	s.WriteString("\n")
 
 	return s.String()
 }
@@ -249,6 +262,13 @@ func formatRemaining(seconds int) string {
 		seconds = 0
 	}
 	return fmt.Sprintf("%dm%02ds", seconds/60, seconds%60)
+}
+
+func formatRemainingLarge(seconds int) string {
+	if seconds < 0 {
+		seconds = 0
+	}
+	return fmt.Sprintf("%d:%02d", seconds/60, seconds%60)
 }
 
 func gradientBar(percent, width int) string {
@@ -298,9 +318,8 @@ func displayHistory(count int) {
 		start = 0
 	}
 
-	fmt.Println()
-	fmt.Println(bold.Render("  DATE                 DURATION   TASK"))
-	fmt.Println()
+	var content strings.Builder
+	content.WriteString(bold.Render("DATE                 DURATION   TASK") + "\n\n")
 	for i := len(lines) - 1; i >= start; i-- {
 		r := csv.NewReader(strings.NewReader(lines[i]))
 		fields, err := r.Read()
@@ -316,8 +335,11 @@ func displayHistory(count int) {
 		if s > 0 {
 			duration = fmt.Sprintf("%dm%ds", mins, s)
 		}
-		fmt.Printf("  %s   %s   %s\n", gray.Render(date), cyan.Render(fmt.Sprintf("%-8s", duration)), task)
+		content.WriteString(fmt.Sprintf("%s   %s   %s\n", gray.Render(date), cyan.Render(fmt.Sprintf("%-8s", duration)), task))
 	}
+
+	fmt.Println()
+	fmt.Println(boxStyle.Render(strings.TrimRight(content.String(), "\n")))
 	fmt.Println()
 }
 
