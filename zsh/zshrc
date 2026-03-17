@@ -46,6 +46,7 @@ bindkey '^D' __confirm_exit
 
 bindkey -v
 KEYTIMEOUT=1
+
 bindkey '\e^?' unix-word-rubout
 bindkey -M viins '^P' up-history
 bindkey -M viins '^N' down-history

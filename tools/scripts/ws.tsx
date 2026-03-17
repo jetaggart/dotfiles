@@ -1,22 +1,19 @@
 #!/usr/bin/env bun
-import { execSync } from "child_process";
 import {
-  copyFileSync,
   existsSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
-  readlinkSync,
   rmSync,
   statSync,
   symlinkSync,
   writeFileSync,
 } from "fs";
+import { copyFile } from "fs/promises";
 import { Box, Text, render, useApp } from "ink";
-import { basename, dirname, join, resolve } from "path";
+import { basename, join, relative, resolve } from "path";
 import { useEffect, useState } from "react";
-import { Confirm, MultiSelect, Select, Spinner, TextInput, git, errorMsg } from "../core/index.ts";
+import { Confirm, MultiSelect, Select, Spinner, TextInput, git, gitAsync, errorMsg } from "../core/index.ts";
 
 const PRESETS: Record<string, { source: string; target: string }> = {
   lettuce: {
@@ -36,7 +33,7 @@ function focusLabel(dirs: string[]): string {
 function findRepos(sourceDir: string): string[] {
   return readdirSync(sourceDir)
     .filter((name) => {
-      if (name === "workspaces" || name === "workspace") return false;
+      if (name === "workspaces" || name === "workspace" || name === ".me") return false;
       try {
         return statSync(join(sourceDir, name, ".git")).isDirectory();
       } catch {
@@ -112,7 +109,8 @@ function writeFocusConfig(wsDir: string, focusDirs: FocusMap) {
   }
 
   const lines = entries.map((e) => (e.dir ? `- ${e.repo}/${e.dir}/` : `- ${e.repo}/`));
-  writeFileSync(localPath, `<focus>\nOnly work in these directories:\n${lines.join("\n")}\n</focus>\n`);
+  const allRepos = Object.keys(focusDirs).sort();
+  writeFileSync(localPath, `<focus>\nOnly modify files in these directories:\n${lines.join("\n")}\n\nYou may read from any directory in the workspace for context: ${allRepos.join(", ")}\n</focus>\n`);
 
   const folders = entries.map((e) =>
     e.dir ? { path: join(e.repo, e.dir), name: `${e.repo}/${e.dir}` } : { path: e.repo, name: e.repo }
@@ -138,20 +136,21 @@ function getDefaultBranch(repoPath: string): string {
   }
 }
 
-function prepareRepo(repoPath: string): { ok: boolean; msg: string } {
+async function prepareRepoAsync(repoPath: string): Promise<{ ok: boolean; msg: string }> {
   const defaultBranch = getDefaultBranch(repoPath);
-  const currentBranch = git("rev-parse --abbrev-ref HEAD", repoPath);
+  const currentBranch = await gitAsync(["rev-parse", "--abbrev-ref", "HEAD"], repoPath);
 
   if (currentBranch !== defaultBranch) {
     return { ok: false, msg: `on branch '${currentBranch}', expected '${defaultBranch}'` };
   }
 
-  if (git("status --porcelain", repoPath).length > 0) {
+  const status = await gitAsync(["status", "--porcelain"], repoPath);
+  if (status.length > 0) {
     return { ok: false, msg: "has uncommitted changes" };
   }
 
   try {
-    git("pull --rebase", repoPath);
+    await gitAsync(["pull", "--rebase"], repoPath);
   } catch (e: any) {
     return { ok: false, msg: `pull failed: ${errorMsg(e)}` };
   }
@@ -159,33 +158,70 @@ function prepareRepo(repoPath: string): { ok: boolean; msg: string } {
   return { ok: true, msg: "ready" };
 }
 
-function createWorktree(repoPath: string, dest: string, branch: string) {
+const SYMLINK_DIRS = [".me", ".claude"];
+
+function symlinkIgnoredDirs(srcRoot: string, dstRoot: string) {
+  function walk(dir: string) {
+    for (const name of readdirSync(dir)) {
+      if (name === "node_modules" || name === ".git" || name === ".venv" || name === "venv") continue;
+      const srcPath = join(dir, name);
+      if (!statSync(srcPath).isDirectory()) continue;
+      if (SYMLINK_DIRS.includes(name)) {
+        const rel = relative(srcRoot, srcPath);
+        const dstPath = join(dstRoot, rel);
+        if (!existsSync(dstPath)) {
+          mkdirSync(join(dstRoot, relative(srcRoot, dir)), { recursive: true });
+          symlinkSync(srcPath, dstPath);
+        }
+      } else {
+        walk(srcPath);
+      }
+    }
+  }
+  walk(srcRoot);
+}
+
+async function createWorktreeAsync(repoPath: string, dest: string, branch: string) {
   try {
-    git(`worktree add "${dest}" -b "${branch}"`, repoPath);
+    await gitAsync(["worktree", "add", dest, "-b", branch], repoPath);
   } catch {
-    git(`worktree add "${dest}" "${branch}"`, repoPath);
+    await gitAsync(["worktree", "add", dest, branch], repoPath);
   }
 
-  const ignored = git("ls-files --others --ignored --exclude-standard", repoPath)
-    .split("\n")
-    .filter(Boolean);
+  const bootstrapDirs = ["node_modules", ".venv", "venv"];
+  const bootstrapFiles = [".env", ".env.local", ".env.development", ".env.development.local", ".env.test", ".env.test.local", ".env.production", ".env.production.local"];
 
-  for (const f of ignored) {
-    const src = join(repoPath, f);
-    const dst = join(dest, f);
+  for (const dir of bootstrapDirs) {
+    const src = join(repoPath, dir);
+    const dst = join(dest, dir);
+    if (!existsSync(src) || existsSync(dst)) continue;
     try {
-      const stat = lstatSync(src);
-      mkdirSync(join(dest, dirname(f)), { recursive: true });
-      if (existsSync(dst)) continue;
-      if (stat.isSymbolicLink()) {
-        symlinkSync(readlinkSync(src), dst);
-      } else if (stat.isDirectory()) {
-        execSync(`cp -a "${src}" "${dst}"`, { stdio: "pipe" });
-      } else if (stat.isFile()) {
-        copyFileSync(src, dst);
-      }
+      const proc = Bun.spawn(["cp", "-a", src, dst], { stdio: ["ignore", "ignore", "ignore"] });
+      await proc.exited;
     } catch {}
   }
+
+  for (const file of bootstrapFiles) {
+    const src = join(repoPath, file);
+    const dst = join(dest, file);
+    if (!existsSync(src) || existsSync(dst)) continue;
+    try {
+      await copyFile(src, dst);
+    } catch {}
+  }
+
+  symlinkIgnoredDirs(repoPath, dest);
+}
+
+function StepHistory({ entries }: { entries: string[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      {entries.map((entry, i) => (
+        <Text key={i} color="gray">{entry}</Text>
+      ))}
+    </Box>
+  );
 }
 
 type CreateStep = "selectRepos" | "checking" | "name" | "focus" | "creating" | "done";
@@ -205,6 +241,7 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
   const [focusIndex, setFocusIndex] = useState(0);
   const [results, setResults] = useState<{ repo: string; ok: boolean; msg: string }[]>([]);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
 
   if (repos.length === 0) {
     return <Text color="red">no git repos found in {source}</Text>;
@@ -212,24 +249,27 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
 
   useEffect(() => {
     if (step === "checking") {
-      setTimeout(() => {
-        const issues = selectedRepos
-          .map((repo) => ({ repo, ...prepareRepo(join(source, repo)) }))
-          .filter((r) => !r.ok);
+      (async () => {
+        const issues: { repo: string; ok: boolean; msg: string }[] = [];
+        for (const repo of selectedRepos) {
+          const result = await prepareRepoAsync(join(source, repo));
+          if (!result.ok) issues.push({ repo, ...result });
+        }
 
         if (issues.length > 0) {
           setError(issues.map((r) => `${r.repo}: ${r.msg}`).join("\n"));
           setStep("done");
         } else {
+          setHistory((h) => [...h, "repos checked"]);
           setStep("name");
         }
-      }, 0);
+      })();
     }
   }, [step]);
 
   useEffect(() => {
     if (step === "creating") {
-      setTimeout(() => {
+      (async () => {
         const wsDir = join(workspacesDir, wsName);
         mkdirSync(wsDir, { recursive: true });
         writeWsConfig(wsDir, source);
@@ -237,10 +277,15 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
         const claudeMd = join(source, "CLAUDE.md");
         if (existsSync(claudeMd)) symlinkSync(claudeMd, join(wsDir, "CLAUDE.md"));
 
+        for (const dir of SYMLINK_DIRS) {
+          const src = join(source, dir);
+          if (existsSync(src) && !existsSync(join(wsDir, dir))) symlinkSync(src, join(wsDir, dir));
+        }
+
         const res: { repo: string; ok: boolean; msg: string }[] = [];
         for (const repo of selectedRepos) {
           try {
-            createWorktree(join(source, repo), join(wsDir, repo), wsName);
+            await createWorktreeAsync(join(source, repo), join(wsDir, repo), wsName);
             res.push({ repo, ok: true, msg: `focus: ${focusLabel(focusDirs[repo])}` });
           } catch (e: any) {
             res.push({ repo, ok: false, msg: errorMsg(e) });
@@ -252,45 +297,59 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
 
         if (process.env.TMUX) {
           try {
-            execSync(`tmux new-window -c "${wsDir}" -n "${wsName}"`, { stdio: "pipe" });
+            const proc = Bun.spawn(["tmux", "new-window", "-c", wsDir, "-n", wsName], { stdio: ["ignore", "ignore", "ignore"] });
+            await proc.exited;
           } catch {}
         }
 
         setStep("done");
-      }, 0);
+      })();
     }
   }, [step]);
 
   if (step === "selectRepos") {
     return (
-      <MultiSelect<string>
-        message="select repos"
-        options={repos.map((r) => ({ value: r, label: r }))}
-        onSubmit={(values) => {
-          if (values.length === 0) return;
-          setSelectedRepos(values.sort());
-          setStep("checking");
-        }}
-        onCancel={() => exit()}
-      />
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <MultiSelect<string>
+          message="select repos"
+          options={repos.map((r) => ({ value: r, label: r }))}
+          onSubmit={(values) => {
+            if (values.length === 0) return;
+            setSelectedRepos(values.sort());
+            setHistory((h) => [...h, `repos: ${values.sort().join(", ")}`]);
+            setStep("checking");
+          }}
+          onCancel={() => exit()}
+        />
+      </Box>
     );
   }
 
   if (step === "checking") {
-    return <Spinner message="checking repos" />;
+    return (
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Spinner message="checking repos" />
+      </Box>
+    );
   }
 
   if (step === "name") {
     return (
-      <TextInput
-        message="workspace name"
-        validate={(v) => (v.length === 0 ? "required" : undefined)}
-        onSubmit={(name) => {
-          setWsName(name);
-          setStep("focus");
-        }}
-        onCancel={() => exit()}
-      />
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <TextInput
+          message="workspace name"
+          validate={(v) => (v.length === 0 ? "required" : undefined)}
+          onSubmit={(name) => {
+            setWsName(name);
+            setHistory((h) => [...h, `name: ${name}`]);
+            setStep("focus");
+          }}
+          onCancel={() => exit()}
+        />
+      </Box>
     );
   }
 
@@ -302,6 +361,7 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
     if (dirs.length === 0) {
       const next = { ...focusDirs, [repo]: ["*"] };
       setFocusDirs(next);
+      setHistory((h) => [...h, `${repo}: everything`]);
       if (focusIndex + 1 < selectedRepos.length) {
         setFocusIndex(focusIndex + 1);
       } else {
@@ -312,33 +372,44 @@ function WsCreate({ source, workspacesDir }: WsCreateProps) {
     }
 
     return (
-      <MultiSelect<string>
-        message={`${repo}: focus directories`}
-        options={[{ value: "*", label: "everything" }, ...dirs.map((d) => ({ value: d, label: d }))]}
-        onSubmit={(values) => {
-          if (values.length === 0) return;
-          const focus = values.includes("*") ? ["*"] : values;
-          const next = { ...focusDirs, [repo]: focus };
-          setFocusDirs(next);
-          if (focusIndex + 1 < selectedRepos.length) {
-            setFocusIndex(focusIndex + 1);
-          } else {
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <MultiSelect<string>
+          message={`${repo}: focus directories`}
+          exclusiveFirst
+          options={[{ value: "*", label: "everything", dim: true }, ...dirs.map((d) => ({ value: d, label: d }))]}
+          onSubmit={(values) => {
+            if (values.length === 0) return;
+            const focus = values.includes("*") ? ["*"] : values;
+            const next = { ...focusDirs, [repo]: focus };
             setFocusDirs(next);
-            setStep("creating");
-          }
-        }}
-        onCancel={() => exit()}
-      />
+            setHistory((h) => [...h, `${repo}: ${focusLabel(focus)}`]);
+            if (focusIndex + 1 < selectedRepos.length) {
+              setFocusIndex(focusIndex + 1);
+            } else {
+              setFocusDirs(next);
+              setStep("creating");
+            }
+          }}
+          onCancel={() => exit()}
+        />
+      </Box>
     );
   }
 
   if (step === "creating") {
-    return <Spinner message="creating workspace" />;
+    return (
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Spinner message="creating workspace" />
+      </Box>
+    );
   }
 
   const wsDir = join(workspacesDir, wsName);
   return (
     <Box flexDirection="column">
+      <StepHistory entries={history} />
       {error ? (
         <>
           <Text color="red">{error}</Text>
@@ -379,70 +450,86 @@ function WsAdd({ source, wsDir }: WsAddProps) {
   const [isNew, setIsNew] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
 
   useEffect(() => {
     if (step === "checking" && isNew) {
-      setTimeout(() => {
+      (async () => {
         const repoPath = join(source, selectedRepo);
-        const check = prepareRepo(repoPath);
+        const check = await prepareRepoAsync(repoPath);
         if (!check.ok) {
           setError(`${selectedRepo}: ${check.msg}`);
           setStep("done");
         } else {
+          setHistory((h) => [...h, `${selectedRepo} checked`]);
           setStep("creating");
         }
-      }, 0);
+      })();
     }
   }, [step, isNew]);
 
   useEffect(() => {
     if (step === "creating") {
-      setTimeout(() => {
+      (async () => {
         try {
-          createWorktree(join(source, selectedRepo), join(wsDir, selectedRepo), basename(wsDir));
+          await createWorktreeAsync(join(source, selectedRepo), join(wsDir, selectedRepo), basename(wsDir));
           setStep("focus");
         } catch (e: any) {
           setError(`${selectedRepo}: ${errorMsg(e)}`);
           setStep("done");
         }
-      }, 0);
+      })();
     }
   }, [step]);
 
   if (step === "selectRepo") {
     return (
-      <Select<string>
-        message="select repo"
-        options={repos.map((r) => ({
-          value: r,
-          label: r,
-          hint: existsSync(join(wsDir, r)) ? "already in workspace" : undefined,
-        }))}
-        onSubmit={(repo) => {
-          setSelectedRepo(repo);
-          const dest = join(wsDir, repo);
-          const repoPath = join(source, repo);
-          if (!existsSync(dest)) {
-            setIsNew(true);
-            setStep("checking");
-          } else if (findTopLevelDirs(repoPath).length === 0) {
-            setError(`${repo} is already in workspace and has no subdirectories`);
-            setStep("done");
-          } else {
-            setStep("focus");
-          }
-        }}
-        onCancel={() => exit()}
-      />
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Select<string>
+          message="select repo"
+          options={repos.map((r) => ({
+            value: r,
+            label: r,
+            hint: existsSync(join(wsDir, r)) ? "already in workspace" : undefined,
+          }))}
+          onSubmit={(repo) => {
+            setSelectedRepo(repo);
+            setHistory((h) => [...h, `repo: ${repo}`]);
+            const dest = join(wsDir, repo);
+            const repoPath = join(source, repo);
+            if (!existsSync(dest)) {
+              setIsNew(true);
+              setStep("checking");
+            } else if (findTopLevelDirs(repoPath).length === 0) {
+              setError(`${repo} is already in workspace and has no subdirectories`);
+              setStep("done");
+            } else {
+              setStep("focus");
+            }
+          }}
+          onCancel={() => exit()}
+        />
+      </Box>
     );
   }
 
   if (step === "checking") {
-    return <Spinner message={`checking ${selectedRepo}`} />;
+    return (
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Spinner message={`checking ${selectedRepo}`} />
+      </Box>
+    );
   }
 
   if (step === "creating") {
-    return <Spinner message={`adding ${selectedRepo}`} />;
+    return (
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Spinner message={`adding ${selectedRepo}`} />
+      </Box>
+    );
   }
 
   if (step === "focus") {
@@ -459,25 +546,30 @@ function WsAdd({ source, wsDir }: WsAddProps) {
     }
 
     return (
-      <MultiSelect<string>
-        message={`${selectedRepo}: focus directories`}
-        options={[{ value: "*", label: "everything" }, ...dirs.map((d) => ({ value: d, label: d }))]}
-        onSubmit={(values) => {
-          if (values.length === 0) return;
-          const focus = values.includes("*") ? ["*"] : values;
-          const existing = readFocusDirs(wsDir);
-          existing[selectedRepo] = focus;
-          writeFocusConfig(wsDir, existing);
-          setResult(`${selectedRepo} - focus: ${focusLabel(focus)}`);
-          setStep("done");
-        }}
-        onCancel={() => exit()}
-      />
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <MultiSelect<string>
+          message={`${selectedRepo}: focus directories`}
+          exclusiveFirst
+          options={[{ value: "*", label: "everything", dim: true }, ...dirs.map((d) => ({ value: d, label: d }))]}
+          onSubmit={(values) => {
+            if (values.length === 0) return;
+            const focus = values.includes("*") ? ["*"] : values;
+            const existing = readFocusDirs(wsDir);
+            existing[selectedRepo] = focus;
+            writeFocusConfig(wsDir, existing);
+            setResult(`${selectedRepo} - focus: ${focusLabel(focus)}`);
+            setStep("done");
+          }}
+          onCancel={() => exit()}
+        />
+      </Box>
     );
   }
 
   return (
     <Box flexDirection="column">
+      <StepHistory entries={history} />
       {error ? (
         <Text color="red">{error}</Text>
       ) : (
@@ -498,6 +590,7 @@ function WsDelete({ source, wsDir }: WsDeleteProps) {
   const { exit } = useApp();
   const [step, setStep] = useState<DeleteStep>("confirm");
   const [results, setResults] = useState<{ repo: string; ok: boolean; msg: string }[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
 
   const [repos] = useState(() =>
     readdirSync(wsDir)
@@ -528,13 +621,13 @@ function WsDelete({ source, wsDir }: WsDeleteProps) {
 
   useEffect(() => {
     if (step === "deleting") {
-      setTimeout(() => {
+      (async () => {
         const res: { repo: string; ok: boolean; msg: string }[] = [];
         for (const repo of repos) {
           try {
             const parentRepo = join(source, repo);
             if (existsSync(join(parentRepo, ".git"))) {
-              git(`worktree remove "${join(wsDir, repo)}" --force`, parentRepo);
+              await gitAsync(["worktree", "remove", join(wsDir, repo), "--force"], parentRepo);
             } else {
               rmSync(join(wsDir, repo), { recursive: true, force: true });
             }
@@ -548,7 +641,7 @@ function WsDelete({ source, wsDir }: WsDeleteProps) {
         } catch {}
         setResults(res);
         setStep("done");
-      }, 0);
+      })();
     }
   }, [step]);
 
@@ -559,14 +652,19 @@ function WsDelete({ source, wsDir }: WsDeleteProps) {
 
     return (
       <Box flexDirection="column">
+        <StepHistory entries={history} />
         {dirtyRepos.length > 0 && (
           <Text color="yellow">uncommitted changes in: {dirtyRepos.join(", ")}</Text>
         )}
         <Confirm
           message={message}
           onSubmit={(yes) => {
-            if (yes) setStep("deleting");
-            else exit();
+            if (yes) {
+              setHistory((h) => [...h, `confirmed delete: ${basename(wsDir)}`]);
+              setStep("deleting");
+            } else {
+              exit();
+            }
           }}
           onCancel={() => exit()}
         />
@@ -575,11 +673,17 @@ function WsDelete({ source, wsDir }: WsDeleteProps) {
   }
 
   if (step === "deleting") {
-    return <Spinner message="deleting workspace" />;
+    return (
+      <Box flexDirection="column">
+        <StepHistory entries={history} />
+        <Spinner message="deleting workspace" />
+      </Box>
+    );
   }
 
   return (
     <Box flexDirection="column">
+      <StepHistory entries={history} />
       <Text bold>delete complete</Text>
       {results.map((r) => (
         <Text key={r.repo}>

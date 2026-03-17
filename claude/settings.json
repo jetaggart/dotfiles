@@ -84,5 +84,6 @@
   },
   "spinnerTipsEnabled": false,
   "promptSuggestionEnabled": false,
-  "prefersReducedMotion": true
+  "prefersReducedMotion": true,
+  "notifications": false
 }

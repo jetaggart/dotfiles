@@ -4,13 +4,12 @@
   "type": "module",
   "scripts": {
     "build:pom": "bun build scripts/pom.tsx --outdir dist --target bun && cp dist/pom.js ~/bin/tools/pom && chmod +x ~/bin/tools/pom",
-    "build:ws": "bun build scripts/ws.ts --outdir dist --target bun && cp dist/ws.js ~/bin/tools/ws && chmod +x ~/bin/tools/ws",
+    "build:ws": "bun build scripts/ws.tsx --outdir dist --target bun && cp dist/ws.js ~/bin/tools/ws && chmod +x ~/bin/tools/ws",
     "build:query": "bun build scripts/query.ts --outdir dist --target bun && cp dist/query.js ~/bin/tools/query && chmod +x ~/bin/tools/query",
     "build": "mkdir -p ~/bin/tools && bun run build:pom && bun run build:ws && bun run build:query",
     "install-cli": "bun run build"
   },
   "dependencies": {
-    "@clack/prompts": "^0.9.1",
     "chalk": "^5.3.0",
     "ink": "^5.0.1",
     "node-notifier": "^10.0.1",

@@ -12,7 +12,8 @@
       "Bash(./install.sh:*)",
       "Bash(pspg:*)",
       "Bash(git:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(bun remove:*)"
     ]
   }
 }

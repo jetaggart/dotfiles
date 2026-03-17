@@ -6,24 +6,26 @@ user_invocable: true
 # Code Review
 
 <steps>
-1. Gather context. Run all of these in parallel:
+1. Detect if you're in a ws workspace by checking for a `.ws.json` file in the current directory or any parent. If found, the workspace root contains multiple git repos as subdirectories (worktrees). Run all git commands from each repo subdirectory, not from the workspace root. If no `.ws.json` is found, you're in a normal repo and can run git commands from the current directory.
+
+2. Gather context. Run all of these in parallel, once per repo if in a workspace:
    - `git diff main...HEAD` to see all changes on this branch
    - `git log main..HEAD --oneline` to see the commit history
    - `git branch --show-current` to identify the branch
    - `git diff main...HEAD --stat` to see which files changed
 
-2. Read every changed file in full. Do not just look at the diff. Understand the full file context each change lives in.
+3. Read every changed file in full. Do not just look at the diff. Understand the full file context each change lives in.
 
-3. For every changed function, type, or module, use Grep and Glob to trace how it's used across the codebase. Look at callers, consumers, and related code. Build a complete picture of the blast radius.
+4. For every changed function, type, or module, use Grep and Glob to trace how it's used across the codebase. Look at callers, consumers, and related code. Build a complete picture of the blast radius.
 
-4. Think deeply about what could go wrong. For each change, ask:
+5. Think deeply about what could go wrong. For each change, ask:
    - Are there codepaths that touch this code that we didn't modify but should have?
    - Are there callers or consumers that now receive different behavior unexpectedly?
    - Could this break under inputs or states that aren't obvious from the diff?
    - Are there race conditions, ordering issues, or state management problems?
    - Did we miss updating related code that depends on assumptions we just changed?
 
-5. Produce a review with the following sections:
+6. Produce a review with the following sections:
 
    <output_format>
    **what changed**
@@ -53,9 +55,9 @@ user_invocable: true
    one paragraph: overall assessment, biggest concerns, confidence level.
    </output_format>
 
-6. Ground every observation in specific code references (file paths, line ranges, function names). Do not make vague claims.
+7. Ground every observation in specific code references (file paths, line ranges, function names). Do not make vague claims.
 
-7. This is read-only. Do not modify any files.
+8. This is read-only. Do not modify any files.
 </steps>
 
 <constraints>

@@ -251,6 +251,8 @@ vim.keymap.set('v', '<D-v>', '"+p', { desc = 'Paste' })
 vim.keymap.set('i', '<D-v>', '<C-r>+', { desc = 'Paste' })
 vim.keymap.set('c', '<D-v>', '<C-r>+', { desc = 'Paste' })
 vim.keymap.set('v', '<D-x>', '"+d', { desc = 'Cut' })
+
+
 vim.keymap.set('n', '<D-a>', 'ggVG', { desc = 'Select all' })
 vim.keymap.set('i', '<D-a>', '<Esc>ggVG', { desc = 'Select all' })
 vim.keymap.set('n', '<D-s>', '<cmd>w<CR>', { desc = 'Save' })

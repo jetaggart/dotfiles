@@ -46,7 +46,7 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 <claude_config>
 - `claude/CLAUDE.md` - global Claude Code instructions for all projects
 - `claude/settings.json` - Claude Code settings and pre-approved commands
-- `claude/skills/` - global skills (git:commit, github:pr, github:lookup, me:claude, sub:agent, simplify, python, react)
+- `claude/skills/` - global skills (git:commit, github:pr, github:lookup, me:claude, sub:agent, simplify, python, react, ws)
 </claude_config>
 
 ## Tools (`tools/`)
@@ -67,7 +67,9 @@ Bun TypeScript projects compiled to standalone scripts in `~/bin/tools/`.
   - Presets: `lettuce` (~/code/lettuce)
 </tools>
 
-To add a new tool: create `tools/scripts/<name>.ts`, add build script to `tools/package.json`, add the build step to the `build` script.
+Shared Ink prompt components live in `tools/core/` (Select, MultiSelect, TextInput, Confirm, Spinner, git/errorMsg helpers). Interactive tools use these instead of third-party prompt libraries.
+
+To add a new tool: create `tools/scripts/<name>.tsx`, import from `../core/index.ts`, add build script to `tools/package.json`, add the build step to the `build` script.
 
 ## Zsh Highlights
 
