@@ -49,6 +49,10 @@ invoke: auto
 - Minimum rule selection: `["E4", "E7", "E9", "F", "I", "T"]`
 - All config lives in `pyproject.toml` under `[tool.ruff]`
 
+## Imports
+
+- All imports go at the top of the file, never inline inside functions or methods
+
 ## Code Style
 
 - snake_case for files, functions, variables

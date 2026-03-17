@@ -13,7 +13,16 @@
       "Bash(pspg:*)",
       "Bash(git:*)",
       "Bash(bun run:*)",
-      "Bash(bun remove:*)"
+      "Bash(bun remove:*)",
+      "Bash(which go:*)",
+      "Bash(cd:*)",
+      "Bash(go get:*)",
+      "Bash(mkdir:*)",
+      "Bash(trash:*)",
+      "Bash(make:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/jetaggart/code/lettuce"
     ]
   }
 }

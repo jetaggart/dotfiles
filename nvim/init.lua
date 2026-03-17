@@ -116,12 +116,6 @@ vim.api.nvim_create_autocmd('FileChangedShell', {
   pattern = '*',
   command = 'let v:fcs_choice = "reload"',
 })
-local timer = vim.uv.new_timer()
-timer:start(0, 1000, vim.schedule_wrap(function()
-  if vim.fn.getcmdwintype() == '' then
-    vim.cmd('silent! checktime')
-  end
-end))
 
 -- Make line numbers default
 vim.o.clipboard = ''
@@ -468,6 +462,20 @@ require('lazy').setup({
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
         defaults = {
+          layout_strategy = 'vertical',
+          layout_config = {
+            vertical = {
+              width = 0.95,
+              height = 0.95,
+              preview_height = 0.4,
+              preview_cutoff = 20,
+            },
+          },
+          selection_strategy = 'row',
+          scroll_strategy = 'limit',
+          winblend = 0,
+          path_display = { 'truncate' },
+          file_ignore_patterns = { 'node_modules/', '.venv/', '.git/', 'dist/', 'build/', '__pycache__/' },
           vimgrep_arguments = {
             'rg', '--color=never', '--no-heading', '--with-filename',
             '--line-number', '--column', '--smart-case',
@@ -476,6 +484,9 @@ require('lazy').setup({
         pickers = {
           find_files = {
             find_command = { 'rg', '--files', '--hidden', '--glob', '!.git' },
+          },
+          live_grep = {
+            debounce = 150,
           },
         },
         extensions = {
@@ -494,7 +505,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
+      vim.keymap.set('n', '<leader>s?', builtin.builtin, { desc = '[S]earch Select Telescope' })
+      vim.keymap.set('n', '<leader>ss', builtin.lsp_dynamic_workspace_symbols, { desc = '[S]earch [S]ymbols (workspace)' })
+      vim.keymap.set('n', '<leader>sy', builtin.lsp_document_symbols, { desc = '[S]earch S[y]mbols (file)' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('v', '<leader>sw', function()
         local saved = vim.fn.getreg('v')
@@ -744,6 +757,7 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         ts_ls = {},
+        gopls = {},
         pyright = {
           root_dir = require('lspconfig.util').root_pattern('pyrightconfig.json', 'pyproject.toml', 'setup.py', 'setup.cfg', '.venv'),
           capabilities = (function()
@@ -952,7 +966,7 @@ require('lazy').setup({
       -- the rust implementation via `'prefer_rust_with_warning'`
       --
       -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'lua' },
+      fuzzy = { implementation = 'prefer_rust_with_warning' },
 
       -- Shows a signature help window while you type arguments for a function
       signature = { enabled = true },

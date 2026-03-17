@@ -6,8 +6,8 @@ Personal dotfiles for macOS. All configs are symlinked from this repo into their
 
 Run `./install.sh` from the repo root. It:
 1. Symlinks config files to their system locations
-2. Builds CLI tools via `bun install && bun run build` in `tools/`
-3. Copies compiled tools to `~/bin/tools/` (on PATH)
+2. Builds Go CLI tools via `make` in `tools/go/`
+3. Installs compiled binaries to `~/bin/tools/` (on PATH)
 
 Run it again after any changes to apply them.
 
@@ -49,12 +49,12 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 - `claude/skills/` - global skills (git:commit, github:pr, github:lookup, me:claude, sub:agent, simplify, python, react, ws)
 </claude_config>
 
-## Tools (`tools/`)
+## Tools (`tools/go/`)
 
-Bun TypeScript projects compiled to standalone scripts in `~/bin/tools/`.
+Go CLI tools built with Bubble Tea and Lip Gloss. Compiled to `~/bin/tools/` via `make`.
 
 <tools>
-- `pom` - pomodoro timer with terminal UI (React/Ink). Usage: `pom [minutes] [task]` or `pom -h [count]` for history. Saves sessions to `~/.pom/history.csv`.
+- `pom` - pomodoro timer with terminal UI (Bubble Tea). Usage: `pom [minutes] [task]` or `pom -h [count]` for history. Saves sessions to `~/.pom/history.csv`.
 - `query` (aliased as `q` with `noglob`) - quick question tool using Claude. Supports conversation continuation. Stores history in `~/.local/share/q/`.
   - `q <question>` or `q n <question>` - new question (opus)
   - `q c <question>` - continue previous conversation (opus)
@@ -67,9 +67,9 @@ Bun TypeScript projects compiled to standalone scripts in `~/bin/tools/`.
   - Presets: `lettuce` (~/code/lettuce)
 </tools>
 
-Shared Ink prompt components live in `tools/core/` (Select, MultiSelect, TextInput, Confirm, Spinner, git/errorMsg helpers). Interactive tools use these instead of third-party prompt libraries.
+Shared code in `tools/go/internal/`: `git/` (exec helpers), `ui/` (Lip Gloss style constants).
 
-To add a new tool: create `tools/scripts/<name>.tsx`, import from `../core/index.ts`, add build script to `tools/package.json`, add the build step to the `build` script.
+To add a new tool: create `tools/go/cmd/<name>/main.go`, add target to `tools/go/Makefile`.
 
 ## Zsh Highlights
 

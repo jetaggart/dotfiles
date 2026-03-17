@@ -22,7 +22,8 @@ ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"
 ln -sfn "$DOTFILES/claude/skills" "$HOME/.claude/skills"
 
 rm -rf "$HOME/bin/tools"
+mkdir -p "$HOME/bin/tools"
 
-cd "$DOTFILES/tools" && bun install && bun run install-cli
+cd "$DOTFILES/tools/go" && make
 
 echo "dotfiles installed"
