@@ -24,7 +24,7 @@ When not in a workspace, behave normally with the current repo.
    - Skip repos with no changes.
    - Focus on files you changed during this session. Do not hunt for unrelated changes.
 
-3. If any repo's current branch is `main` or `master`, check the repo name. If the repo is `willow` or `dotfiles`, skip this check and proceed normally. Otherwise, use Ask questions: "You're on `repo-name:main`, proceed?" with options "Yes" and "No". If they say no, stop. Do this before any other work.
+3. If any repo's current branch is `main` or `master`, check the repo name. If the repo is `willow` or `dotfiles`, skip this check and proceed normally. Otherwise, if Ask questions is available, use it: "You're on `repo-name:main`, proceed?" with options "Yes" and "No". If Ask questions is not available, ask the same in plain text and stop for an answer. If they say no, stop. Do this before any other work.
 
 4. For each repo with changes, draft a commit message:
    - If the branch name contains a JIRA identifier (e.g. LTC-1234, PROJ-567), prefix the title with it in brackets: `[LTC-1234] short message`
@@ -44,7 +44,9 @@ When not in a workspace, behave normally with the current repo.
    - "Expand" - add bullet-point bodies summarizing what changed and why, then present again
    - "Rewrite" - discuss what to change, draft new messages, then loop back to step 5
 
-6. Once approved, for each repo: stage relevant files with `git add` by name (not `git add -A`), then commit. Use `git -C <repo_path>` when in a workspace. Pass the commit message using the `-m` flag with a plain string. Do not use shell expansions like `$()`, heredocs, or subshells in any git commands. Do not push.
+   If Ask questions is not available as a tool in this session: output the same review in a normal assistant message, say that Ask questions is unavailable, and ask the user to reply with Approve, Expand, or Rewrite. End the turn without staging or committing. Do not treat the initial commit request (e.g. `/git-commit`) as approval. After Expand or Rewrite, present again and wait for Approve before continuing.
+
+6. Once approved (via Ask questions or an explicit follow-up such as Approve), for each repo: stage relevant files with `git add` by name (not `git add -A`), then commit. Use `git -C <repo_path>` when in a workspace. Pass the commit message using the `-m` flag with a plain string. Do not use shell expansions like `$()`, heredocs, or subshells in any git commands. Do not push.
 
 7. Show `git log --oneline -1` for each repo to confirm.
 </steps>
