@@ -20,6 +20,7 @@ Run it again after any changes to apply them.
 | `ghostty/config` | `~/Library/Application Support/com.mitchellh.ghostty/config` |
 | `lazygit/config.yml` | `~/Library/Application Support/lazygit/config.yml` |
 | `psql/psqlrc` | `~/.psqlrc` |
+| `pgcli/config` | `~/.config/pgcli/config` |
 | `gitignore_global` | `~/.gitignore_global` |
 | `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` |
 | `claude/settings.json` | `~/.claude/settings.json` |
@@ -40,6 +41,7 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 - `ghostty/config` - Ghostty terminal (JetBrainsMono, Alabaster theme)
 - `lazygit/config.yml` - LazyGit with Catppuccin Latte theme, delta pager
 - `psql/psqlrc` - psql with pspg pager and admin query shortcuts
+- `pgcli/config` - pgcli with pspg pager, vi mode, Catppuccin Latte colors
 - `gitignore_global` - global gitignore (`.me/`, `.claude/`, `.cursor/`, `.vscode/`)
 </configs>
 

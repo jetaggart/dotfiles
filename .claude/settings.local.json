@@ -19,7 +19,12 @@
       "Bash(go get:*)",
       "Bash(mkdir:*)",
       "Bash(trash:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(gofmt:*)",
+      "Bash(claude config:*)",
+      "Bash(/Users/jetaggart/.local/bin/claude --help)",
+      "Bash(cat:*)",
+      "Read(//Users/jetaggart/.claude/**)"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce"

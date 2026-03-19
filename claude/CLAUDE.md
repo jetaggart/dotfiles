@@ -110,6 +110,14 @@ When creating CLAUDE.md, CLAUDE.development.md, or skill files for any project:
 A project's CLAUDE.local.md may contain a `<focus>` block listing directories to work in. When present, treat all other directories as out of scope. Do not read, modify, or search files outside the listed directories unless explicitly asked. This keeps work targeted in large monorepos.
 </focus_directories>
 
+<shell_commands>
+Run each shell command as a separate Bash tool call. Never chain commands with && or ||. Never use 2>&1 redirects or shell expansions like $() in commands. Keep each command simple and single-purpose to avoid triggering approval prompts.
+</shell_commands>
+
+<golang>
+When looking up Go package APIs, function signatures, or types, use WebFetch on pkg.go.dev instead of running go doc or other local commands. Use the gopls LSP plugin for completions and diagnostics. Read source files directly rather than running shell commands to inspect code.
+</golang>
+
 <committing>
 Always use the /git:commit skill when creating git commits. Never commit directly with git commands.
 </committing>
