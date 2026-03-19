@@ -97,6 +97,7 @@
   "cursor.composer.textSizeScale": 0.85,
   "cursorpyright.analysis.inlayHints.genericTypes": false,
   "editor.inlayHints.enabled": "off",
+  "editor.codeLens": false,
   "editor.minimap.sectionHeaderLetterSpacing": 0.5,
   "window.density.editorTabHeight": "compact",
   "workbench.editor.pinnedTabSizing": "compact",
