@@ -1,9 +1,7 @@
-.me/
-.cursor/
-.claude/
-.vscode/
+.me
+.cursor
+.claude
+.vscode
 pyrightconfig.json
-.DS_Store/
 .DS_Store
-CLAUDE.local.md
 CLAUDE.local.md

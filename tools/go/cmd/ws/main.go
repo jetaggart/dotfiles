@@ -12,17 +12,25 @@ import (
 
 	"dotfiles/tools/internal/git"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 var (
-	cyan   = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
-	gray   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	red    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	bold   = lipgloss.NewStyle().Bold(true)
+	cyan    = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
+	gray    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	green   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	yellow  = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	red     = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	bold    = lipgloss.NewStyle().Bold(true)
+	magenta = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
+
+	titleBar     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("213"))
+	panel        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 1)
+	summaryPanel = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("35")).Padding(0, 1)
+	historyPanel = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240")).Padding(0, 1).MarginBottom(1)
+	rule         = lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+	statusPanel  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).Padding(0, 1).MarginBottom(1)
 
 	home    = os.Getenv("HOME")
 	presets = map[string]struct{ source, target string }{
@@ -345,7 +353,7 @@ func newMultiSelect(message string, options []string, exclusiveFirst bool) multi
 func (m multiSelectModel) Init() tea.Cmd { return nil }
 
 func (m multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			m.cursor--
@@ -357,7 +365,7 @@ func (m multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor >= len(m.options) {
 				m.cursor = 0
 			}
-		case " ":
+		case "space":
 			if m.selected[m.cursor] {
 				delete(m.selected, m.cursor)
 			} else {
@@ -389,19 +397,24 @@ func (m multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if len(m.selected) > 0 {
 				m.done = true
-				return m, tea.Quit
+				return m, nil
 			}
 		case "esc", "ctrl+c":
 			m.cancelled = true
-			return m, tea.Quit
+			return m, nil
 		}
 	}
 	return m, nil
 }
 
-func (m multiSelectModel) View() string {
+func (m multiSelectModel) View() tea.View {
+	return tea.NewView(m.render())
+}
+
+func (m multiSelectModel) render() string {
 	var s strings.Builder
 	s.WriteString(cyan.Bold(true).Render(m.message) + "\n")
+	s.WriteString(rule.Render(strings.Repeat("─", promptUnderline(len(m.message)))) + "\n")
 	for i, opt := range m.options {
 		cursor := " "
 		if i == m.cursor {
@@ -417,7 +430,7 @@ func (m multiSelectModel) View() string {
 		}
 		s.WriteString(fmt.Sprintf("%s%s %s\n", cursor, check, label))
 	}
-	s.WriteString(gray.Render("space: toggle, a: all, enter: confirm") + "\n")
+	s.WriteString(magenta.Render("space") + gray.Render(" toggle  ") + magenta.Render("a") + gray.Render(" all  ") + magenta.Render("enter") + gray.Render(" confirm") + "\n")
 	return s.String()
 }
 
@@ -450,7 +463,7 @@ func newSelect(message string, options, hints []string) selectModel {
 func (m selectModel) Init() tea.Cmd { return nil }
 
 func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			m.cursor--
@@ -464,18 +477,23 @@ func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			m.done = true
-			return m, tea.Quit
+			return m, nil
 		case "esc", "ctrl+c":
 			m.cancelled = true
-			return m, tea.Quit
+			return m, nil
 		}
 	}
 	return m, nil
 }
 
-func (m selectModel) View() string {
+func (m selectModel) View() tea.View {
+	return tea.NewView(m.render())
+}
+
+func (m selectModel) render() string {
 	var s strings.Builder
 	s.WriteString(cyan.Bold(true).Render(m.message) + "\n")
+	s.WriteString(rule.Render(strings.Repeat("─", promptUnderline(len(m.message)))) + "\n")
 	for i, opt := range m.options {
 		cursor := " "
 		if i == m.cursor {
@@ -487,58 +505,7 @@ func (m selectModel) View() string {
 		}
 		s.WriteString(fmt.Sprintf("%s %s%s\n", cursor, opt, hint))
 	}
-	return s.String()
-}
-
-type textInputModel struct {
-	message   string
-	value     string
-	err       string
-	done      bool
-	cancelled bool
-}
-
-func newTextInput(message string) textInputModel {
-	return textInputModel{message: message}
-}
-
-func (m textInputModel) Init() tea.Cmd { return nil }
-
-func (m textInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		switch msg.String() {
-		case "enter":
-			if m.value == "" {
-				m.err = "required"
-			} else {
-				m.done = true
-				return m, tea.Quit
-			}
-		case "esc", "ctrl+c":
-			m.cancelled = true
-			return m, tea.Quit
-		case "backspace":
-			if len(m.value) > 0 {
-				m.value = m.value[:len(m.value)-1]
-			}
-			m.err = ""
-		default:
-			if len(msg.String()) == 1 {
-				m.value += msg.String()
-				m.err = ""
-			}
-		}
-	}
-	return m, nil
-}
-
-func (m textInputModel) View() string {
-	var s strings.Builder
-	s.WriteString(cyan.Bold(true).Render(m.message) + "\n")
-	s.WriteString(green.Render("> ") + m.value + gray.Render("_") + "\n")
-	if m.err != "" {
-		s.WriteString(red.Render(m.err) + "\n")
-	}
+	s.WriteString(magenta.Render("j") + gray.Render("/") + magenta.Render("k") + gray.Render(" move  ") + magenta.Render("enter") + gray.Render(" pick") + "\n")
 	return s.String()
 }
 
@@ -556,325 +523,37 @@ func newConfirm(message string) confirmModel {
 func (m confirmModel) Init() tea.Cmd { return nil }
 
 func (m confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch msg.String() {
 		case "y", "Y":
 			m.result = true
 			m.done = true
-			return m, tea.Quit
+			return m, nil
 		case "n", "N":
 			m.result = false
 			m.done = true
-			return m, tea.Quit
+			return m, nil
 		case "esc", "ctrl+c":
 			m.cancelled = true
-			return m, tea.Quit
+			return m, nil
 		}
 	}
 	return m, nil
 }
 
-func (m confirmModel) View() string {
-	return cyan.Bold(true).Render(m.message) + " " + gray.Render("(y/n)") + "\n"
+func (m confirmModel) View() tea.View {
+	return tea.NewView(cyan.Bold(true).Render(m.message) + " " + gray.Render("(y/n)") + "\n")
 }
 
-func runMultiSelect(message string, options []string, exclusiveFirst bool) ([]string, bool) {
-	m := newMultiSelect(message, options, exclusiveFirst)
-	p := tea.NewProgram(m)
-	result, err := p.Run()
-	if err != nil {
-		return nil, false
+func promptUnderline(titleLen int) int {
+	w := titleLen + 12
+	if w < 36 {
+		w = 36
 	}
-	final := result.(multiSelectModel)
-	if final.cancelled {
-		return nil, false
+	if w > 58 {
+		w = 58
 	}
-	return final.Values(), true
-}
-
-func runSelect(message string, options, hints []string) (int, bool) {
-	m := newSelect(message, options, hints)
-	p := tea.NewProgram(m)
-	result, err := p.Run()
-	if err != nil {
-		return 0, false
-	}
-	final := result.(selectModel)
-	if final.cancelled {
-		return 0, false
-	}
-	return final.cursor, true
-}
-
-func runTextInput(message string) (string, bool) {
-	m := newTextInput(message)
-	p := tea.NewProgram(m)
-	result, err := p.Run()
-	if err != nil {
-		return "", false
-	}
-	final := result.(textInputModel)
-	if final.cancelled {
-		return "", false
-	}
-	return final.value, true
-}
-
-func runConfirm(message string) (bool, bool) {
-	m := newConfirm(message)
-	p := tea.NewProgram(m)
-	result, err := p.Run()
-	if err != nil {
-		return false, false
-	}
-	final := result.(confirmModel)
-	if final.cancelled {
-		return false, false
-	}
-	return final.result, true
-}
-
-func printHistory(entries []string) {
-	for _, e := range entries {
-		fmt.Println(gray.Render(e))
-	}
-	if len(entries) > 0 {
-		fmt.Println()
-	}
-}
-
-func cmdCreate(source, workspacesDir string) {
-	repos := findRepos(source)
-	if len(repos) == 0 {
-		fmt.Println(red.Render("no git repos found in " + source))
-		return
-	}
-
-	var history []string
-
-	selected, ok := runMultiSelect("select repos", repos, false)
-	if !ok || len(selected) == 0 {
-		return
-	}
-	sort.Strings(selected)
-	history = append(history, "repos: "+strings.Join(selected, ", "))
-
-	printHistory(history)
-	fmt.Println(gray.Render("checking repos..."))
-
-	var issues []string
-	for _, repo := range selected {
-		ok, msg := prepareRepo(filepath.Join(source, repo))
-		if !ok {
-			issues = append(issues, repo+": "+msg)
-		}
-	}
-	if len(issues) > 0 {
-		for _, issue := range issues {
-			fmt.Println(red.Render(issue))
-		}
-		fmt.Println(red.Render("fix the issues above and try again"))
-		return
-	}
-	history = append(history, "repos checked")
-
-	printHistory(history)
-	wsName, ok := runTextInput("workspace name")
-	if !ok {
-		return
-	}
-	history = append(history, "name: "+wsName)
-
-	focus := focusMap{}
-	for _, repo := range selected {
-		repoPath := filepath.Join(source, repo)
-		dirs := findTopLevelDirs(repoPath)
-		if len(dirs) == 0 {
-			focus[repo] = []string{"*"}
-			history = append(history, repo+": everything")
-			continue
-		}
-
-		printHistory(history)
-		options := append([]string{"everything"}, dirs...)
-		values, ok := runMultiSelect(repo+": focus directories", options, true)
-		if !ok {
-			return
-		}
-		for i, v := range values {
-			if v == "everything" {
-				values[i] = "*"
-			}
-		}
-		hasAll := false
-		for _, v := range values {
-			if v == "*" {
-				hasAll = true
-				break
-			}
-		}
-		if hasAll {
-			focus[repo] = []string{"*"}
-		} else {
-			focus[repo] = values
-		}
-		history = append(history, repo+": "+focusLabel(focus[repo]))
-	}
-
-	printHistory(history)
-	fmt.Println(gray.Render("creating workspace..."))
-
-	wsDir := filepath.Join(workspacesDir, wsName)
-	os.MkdirAll(wsDir, 0755)
-	writeWsConfig(wsDir, source)
-
-	claudeMd := filepath.Join(source, "CLAUDE.md")
-	if _, err := os.Stat(claudeMd); err == nil {
-		os.Symlink(claudeMd, filepath.Join(wsDir, "CLAUDE.md"))
-	}
-
-	for _, dir := range symlinkDirs {
-		src := filepath.Join(source, dir)
-		dst := filepath.Join(wsDir, dir)
-		if _, err := os.Stat(src); err == nil {
-			if _, err := os.Lstat(dst); err != nil {
-				os.Symlink(src, dst)
-			}
-		}
-	}
-
-	type result struct {
-		repo string
-		ok   bool
-		msg  string
-	}
-	var results []result
-	for _, repo := range selected {
-		err := createWorktree(filepath.Join(source, repo), filepath.Join(wsDir, repo), wsName)
-		if err != nil {
-			results = append(results, result{repo, false, git.ErrorMsg(err)})
-		} else {
-			results = append(results, result{repo, true, "focus: " + focusLabel(focus[repo])})
-		}
-	}
-
-	writeFocusConfig(wsDir, focus)
-
-	printHistory(history)
-	fmt.Println(bold.Render("workspace: " + wsDir))
-	for _, r := range results {
-		if r.ok {
-			fmt.Println(green.Render("+") + " " + r.repo + ": " + r.msg)
-		} else {
-			fmt.Println(red.Render("x") + " " + r.repo + ": " + r.msg)
-		}
-	}
-
-	if os.Getenv("TMUX") != "" {
-		exec.Command("tmux", "new-window", "-c", wsDir, "-n", wsName).Run()
-		fmt.Println(green.Render("opened tmux window: " + wsName))
-	} else {
-		fmt.Println(gray.Render("cd " + wsDir))
-	}
-}
-
-func cmdAdd(source, wsDir string) {
-	repos := findRepos(source)
-	if len(repos) == 0 {
-		fmt.Println(red.Render("no git repos found in " + source))
-		return
-	}
-
-	var history []string
-
-	hints := make([]string, len(repos))
-	for i, repo := range repos {
-		if _, err := os.Stat(filepath.Join(wsDir, repo)); err == nil {
-			hints[i] = "already in workspace"
-		}
-	}
-
-	idx, ok := runSelect("select repo", repos, hints)
-	if !ok {
-		return
-	}
-	selectedRepo := repos[idx]
-	history = append(history, "repo: "+selectedRepo)
-
-	dest := filepath.Join(wsDir, selectedRepo)
-	repoPath := filepath.Join(source, selectedRepo)
-	isNew := false
-
-	if _, err := os.Stat(dest); err != nil {
-		isNew = true
-
-		printHistory(history)
-		fmt.Println(gray.Render("checking " + selectedRepo + "..."))
-
-		ok, msg := prepareRepo(repoPath)
-		if !ok {
-			fmt.Println(red.Render(selectedRepo + ": " + msg))
-			return
-		}
-		history = append(history, selectedRepo+" checked")
-
-		printHistory(history)
-		fmt.Println(gray.Render("adding " + selectedRepo + "..."))
-
-		if err := createWorktree(repoPath, dest, filepath.Base(wsDir)); err != nil {
-			fmt.Println(red.Render(selectedRepo + ": " + git.ErrorMsg(err)))
-			return
-		}
-	} else {
-		dirs := findTopLevelDirs(repoPath)
-		if len(dirs) == 0 {
-			fmt.Println(red.Render(selectedRepo + " is already in workspace and has no subdirectories"))
-			return
-		}
-	}
-	_ = isNew
-
-	dirs := findTopLevelDirs(repoPath)
-	if len(dirs) == 0 {
-		existing := readFocusDirs(wsDir)
-		existing[selectedRepo] = []string{"*"}
-		writeFocusConfig(wsDir, existing)
-		printHistory(history)
-		fmt.Println(green.Render(selectedRepo + " - focus: everything"))
-		return
-	}
-
-	printHistory(history)
-	options := append([]string{"everything"}, dirs...)
-	values, ok := runMultiSelect(selectedRepo+": focus directories", options, true)
-	if !ok {
-		return
-	}
-	for i, v := range values {
-		if v == "everything" {
-			values[i] = "*"
-		}
-	}
-	hasAll := false
-	for _, v := range values {
-		if v == "*" {
-			hasAll = true
-			break
-		}
-	}
-	var focus []string
-	if hasAll {
-		focus = []string{"*"}
-	} else {
-		focus = values
-	}
-
-	existing := readFocusDirs(wsDir)
-	existing[selectedRepo] = focus
-	writeFocusConfig(wsDir, existing)
-
-	printHistory(history)
-	fmt.Println(green.Render(selectedRepo + " - focus: " + focusLabel(focus)))
+	return w
 }
 
 func listLeftovers(dir string) []string {
@@ -894,13 +573,53 @@ func listLeftovers(dir string) []string {
 	return items
 }
 
-func cmdDelete(source, wsDir string) {
+func parseCreateArgs(rest []string) (useTmux bool, pos []string) {
+	for _, a := range rest {
+		if a == "--tmux" {
+			useTmux = true
+			continue
+		}
+		pos = append(pos, a)
+	}
+	return useTmux, pos
+}
+
+func runCreate(source, workspaces string, useTmux bool) {
+	repos := findRepos(source)
+	if len(repos) == 0 {
+		fmt.Println(red.Render("no git repos found in " + source))
+		return
+	}
+	if _, err := tea.NewProgram(newAppCreate(source, workspaces, repos, useTmux)).Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runAdd(source, wsDir string) {
+	repos := findRepos(source)
+	if len(repos) == 0 {
+		fmt.Println(red.Render("no git repos found in " + source))
+		return
+	}
+	hints := make([]string, len(repos))
+	for i, repo := range repos {
+		if _, err := os.Stat(filepath.Join(wsDir, repo)); err == nil {
+			hints[i] = "already in workspace"
+		}
+	}
+	if _, err := tea.NewProgram(newAppAdd(source, wsDir, repos, hints)).Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runDelete(source, wsDir string) {
 	entries, err := os.ReadDir(wsDir)
 	if err != nil {
 		fmt.Println(red.Render("cannot read workspace: " + err.Error()))
 		return
 	}
-
 	var repos []string
 	for _, e := range entries {
 		if !e.IsDir() || e.Name() == wsConfig {
@@ -909,99 +628,24 @@ func cmdDelete(source, wsDir string) {
 		repos = append(repos, e.Name())
 	}
 	sort.Strings(repos)
-
 	if len(repos) == 0 {
 		fmt.Println(red.Render("no repos in workspace"))
 		return
 	}
-
-	var dirtyRepos []string
+	var dirty []string
 	for _, repo := range repos {
 		status := git.Run("status --porcelain", filepath.Join(wsDir, repo))
 		if status != "" {
-			dirtyRepos = append(dirtyRepos, repo)
+			dirty = append(dirty, repo)
 		}
 	}
-
-	message := fmt.Sprintf("delete workspace %s? (%s)", filepath.Base(wsDir), strings.Join(repos, ", "))
-	if len(dirtyRepos) > 0 {
-		fmt.Println(yellow.Render("uncommitted changes in: " + strings.Join(dirtyRepos, ", ")))
-		message = "uncommitted changes in: " + strings.Join(dirtyRepos, ", ") + ". delete anyway?"
+	msg := fmt.Sprintf("delete workspace %s? (%s)", filepath.Base(wsDir), strings.Join(repos, ", "))
+	if len(dirty) > 0 {
+		msg = "uncommitted changes in: " + strings.Join(dirty, ", ") + ". delete anyway?"
 	}
-
-	yes, ok := runConfirm(message)
-	if !ok || !yes {
-		return
-	}
-
-	fmt.Println(gray.Render("deleting workspace..."))
-
-	type result struct {
-		repo string
-		ok   bool
-		msg  string
-	}
-	var results []result
-	var failedRepos []string
-	for _, repo := range repos {
-		repoDir := filepath.Join(wsDir, repo)
-		parentRepo := filepath.Join(source, repo)
-		if _, err := os.Stat(filepath.Join(parentRepo, ".git")); err == nil {
-			_, err := git.RunArgs([]string{"worktree", "remove", filepath.Join(wsDir, repo), "--force"}, parentRepo)
-			if err != nil {
-				failedRepos = append(failedRepos, repo)
-			} else {
-				results = append(results, result{repo, true, "removed"})
-			}
-		} else {
-			os.RemoveAll(repoDir)
-			results = append(results, result{repo, true, "removed"})
-		}
-	}
-
-	if len(failedRepos) > 0 {
-		fmt.Println()
-		fmt.Println(yellow.Render("could not cleanly remove:"))
-		for _, repo := range failedRepos {
-			repoDir := filepath.Join(wsDir, repo)
-			leftovers := listLeftovers(repoDir)
-			fmt.Println(yellow.Render("  " + repo + ":"))
-			for _, l := range leftovers {
-				fmt.Println(yellow.Render("    " + l))
-			}
-		}
-		fmt.Println()
-		yes, ok := runConfirm("force remove these directories?")
-		if !ok || !yes {
-			fmt.Println(red.Render("aborted — workspace partially deleted"))
-			for _, r := range results {
-				fmt.Println(green.Render("-") + " " + r.repo + ": " + r.msg)
-			}
-			for _, repo := range failedRepos {
-				fmt.Println(yellow.Render("!") + " " + repo + ": skipped")
-			}
-			return
-		}
-		for _, repo := range failedRepos {
-			repoDir := filepath.Join(wsDir, repo)
-			parentRepo := filepath.Join(source, repo)
-			os.RemoveAll(repoDir)
-			if _, err := os.Stat(filepath.Join(parentRepo, ".git")); err == nil {
-				git.RunArgs([]string{"worktree", "prune"}, parentRepo)
-			}
-			results = append(results, result{repo, true, "force removed"})
-		}
-	}
-
-	os.RemoveAll(wsDir)
-
-	fmt.Println(bold.Render("delete complete"))
-	for _, r := range results {
-		if r.ok {
-			fmt.Println(green.Render("-") + " " + r.repo + ": " + r.msg)
-		} else {
-			fmt.Println(red.Render("x") + " " + r.repo + ": " + r.msg)
-		}
+	if _, err := tea.NewProgram(newAppDelete(source, wsDir, repos, dirty, msg)).Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
@@ -1017,19 +661,20 @@ func main() {
 
 	switch command {
 	case "create":
-		if len(rest) == 1 {
-			if preset, ok := presets[rest[0]]; ok {
-				cmdCreate(preset.source, preset.target)
+		useTmux, cargs := parseCreateArgs(rest)
+		if len(cargs) == 1 {
+			if preset, ok := presets[cargs[0]]; ok {
+				runCreate(preset.source, preset.target, useTmux)
 				return
 			}
 		}
-		if len(rest) == 2 {
-			source, _ := filepath.Abs(rest[0])
-			target, _ := filepath.Abs(rest[1])
-			cmdCreate(source, target)
+		if len(cargs) == 2 {
+			source, _ := filepath.Abs(cargs[0])
+			target, _ := filepath.Abs(cargs[1])
+			runCreate(source, target, useTmux)
 			return
 		}
-		fmt.Fprintln(os.Stderr, "usage: ws create <preset> | ws create <source_dir> <target_dir>")
+		fmt.Fprintln(os.Stderr, "usage: ws create [--tmux] <preset> | ws create [--tmux] <source_dir> <target_dir>")
 		fmt.Fprintf(os.Stderr, "presets: %s\n", presetNames())
 		os.Exit(1)
 
@@ -1039,7 +684,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "not in a workspace directory (no .ws.json found)")
 			os.Exit(1)
 		}
-		cmdAdd(source, wsDir)
+		runAdd(source, wsDir)
 
 	case "delete":
 		if len(rest) != 1 {
@@ -1057,7 +702,7 @@ func main() {
 			Source string `json:"source"`
 		}
 		json.Unmarshal(data, &cfg)
-		cmdDelete(cfg.Source, wsDir)
+		runDelete(cfg.Source, wsDir)
 
 	default:
 		printUsage()
@@ -1066,12 +711,17 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Fprintln(os.Stderr, "usage: ws <command>")
-	fmt.Fprintln(os.Stderr, "  ws create <preset>                  create workspace from preset")
-	fmt.Fprintln(os.Stderr, "  ws create <source_dir> <target_dir>  create workspace")
-	fmt.Fprintln(os.Stderr, "  ws add                              add repo (run from workspace dir)")
-	fmt.Fprintln(os.Stderr, "  ws delete <workspace_dir>           delete a workspace")
-	fmt.Fprintf(os.Stderr, "presets: %s\n", presetNames())
+	head := titleBar.Render("ws") + gray.Render(" — workspace manager")
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		head,
+		"",
+		cyan.Render("create")+gray.Render("  ws create [--tmux] <preset>")+magenta.Render(" · ")+gray.Render("ws create [--tmux] <src> <dst>"),
+		cyan.Render("add")+gray.Render("     ws add")+magenta.Render(" · ")+gray.Render("from inside a workspace"),
+		cyan.Render("delete")+gray.Render("  ws delete <dir>"),
+		"",
+		gray.Render("presets  ")+yellow.Render(presetNames()),
+	)
+	fmt.Fprintln(os.Stderr, panel.BorderForeground(lipgloss.Color("241")).Render(body))
 }
 
 func presetNames() string {
