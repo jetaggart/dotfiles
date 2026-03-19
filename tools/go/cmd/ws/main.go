@@ -877,6 +877,23 @@ func cmdAdd(source, wsDir string) {
 	fmt.Println(green.Render(selectedRepo + " - focus: " + focusLabel(focus)))
 }
 
+func listLeftovers(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var items []string
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() {
+			name += "/"
+		}
+		items = append(items, name)
+	}
+	sort.Strings(items)
+	return items
+}
+
 func cmdDelete(source, wsDir string) {
 	entries, err := os.ReadDir(wsDir)
 	if err != nil {
@@ -925,18 +942,54 @@ func cmdDelete(source, wsDir string) {
 		msg  string
 	}
 	var results []result
+	var failedRepos []string
 	for _, repo := range repos {
+		repoDir := filepath.Join(wsDir, repo)
 		parentRepo := filepath.Join(source, repo)
 		if _, err := os.Stat(filepath.Join(parentRepo, ".git")); err == nil {
 			_, err := git.RunArgs([]string{"worktree", "remove", filepath.Join(wsDir, repo), "--force"}, parentRepo)
 			if err != nil {
-				results = append(results, result{repo, false, git.ErrorMsg(err)})
+				failedRepos = append(failedRepos, repo)
 			} else {
 				results = append(results, result{repo, true, "removed"})
 			}
 		} else {
-			os.RemoveAll(filepath.Join(wsDir, repo))
+			os.RemoveAll(repoDir)
 			results = append(results, result{repo, true, "removed"})
+		}
+	}
+
+	if len(failedRepos) > 0 {
+		fmt.Println()
+		fmt.Println(yellow.Render("could not cleanly remove:"))
+		for _, repo := range failedRepos {
+			repoDir := filepath.Join(wsDir, repo)
+			leftovers := listLeftovers(repoDir)
+			fmt.Println(yellow.Render("  " + repo + ":"))
+			for _, l := range leftovers {
+				fmt.Println(yellow.Render("    " + l))
+			}
+		}
+		fmt.Println()
+		yes, ok := runConfirm("force remove these directories?")
+		if !ok || !yes {
+			fmt.Println(red.Render("aborted — workspace partially deleted"))
+			for _, r := range results {
+				fmt.Println(green.Render("-") + " " + r.repo + ": " + r.msg)
+			}
+			for _, repo := range failedRepos {
+				fmt.Println(yellow.Render("!") + " " + repo + ": skipped")
+			}
+			return
+		}
+		for _, repo := range failedRepos {
+			repoDir := filepath.Join(wsDir, repo)
+			parentRepo := filepath.Join(source, repo)
+			os.RemoveAll(repoDir)
+			if _, err := os.Stat(filepath.Join(parentRepo, ".git")); err == nil {
+				git.RunArgs([]string{"worktree", "prune"}, parentRepo)
+			}
+			results = append(results, result{repo, true, "force removed"})
 		}
 	}
 
