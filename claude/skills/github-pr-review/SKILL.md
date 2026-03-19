@@ -1,5 +1,5 @@
 ---
-name: github:pr:review
+name: github-pr-review
 description: Deep analysis and review of a GitHub PR. Examines logic, codebase fit, gaps, risks, and testing needs. Read-only, no code changes.
 user_invocable: true
 args: <url>

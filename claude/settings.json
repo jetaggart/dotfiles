@@ -148,11 +148,11 @@
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true
+  },
   "spinnerTipsEnabled": false,
   "promptSuggestionEnabled": false,
   "prefersReducedMotion": true,
-  "notifications": false,
-  "enabledPlugins": {
-    "gopls-lsp@claude-plugins-official": true
-  }
+  "notifications": false
 }

@@ -48,7 +48,7 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 <claude_config>
 - `claude/CLAUDE.md` - global Claude Code instructions for all projects
 - `claude/settings.json` - Claude Code settings and pre-approved commands
-- `claude/skills/` - global skills (git:commit, github:pr, github:lookup, me:claude, sub:agent, simplify, python, react, ws)
+- `claude/skills/` - global skills (git-commit, github-pr, github-lookup, me-claude, sub-agent, simplify, python, react, ws)
 </claude_config>
 
 ## Tools (`tools/go/`)

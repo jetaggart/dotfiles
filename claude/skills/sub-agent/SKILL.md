@@ -1,5 +1,5 @@
 ---
-name: sub:agent
+name: sub-agent
 description: Launch a sub-agent to work on a task in the background or foreground
 user_invocable: true
 args: <task description>

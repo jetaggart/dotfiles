@@ -1,5 +1,5 @@
 ---
-name: github:pr
+name: github-pr
 description: Fetch a GitHub PR for context, use as a style reference, template for implementation, or for reflection.
 invoke: user
 arguments:

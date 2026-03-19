@@ -1,5 +1,5 @@
 ---
-name: claude:install
+name: claude-install
 description: Analyze a codebase and generate all Claude Code configuration files. Use when setting up Claude Code for a new project, bootstrapping CLAUDE.md and related config, or when the user says "orchestrate", "set up claude code", "bootstrap claude config", or "generate claude files".
 disable-model-invocation: true
 allowed-tools: Read, Bash, Write, Edit, Glob, Grep, LS

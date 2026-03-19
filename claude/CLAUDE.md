@@ -119,7 +119,7 @@ When looking up Go package APIs, function signatures, or types, use WebFetch on 
 </golang>
 
 <committing>
-Always use the /git:commit skill when creating git commits. Never commit directly with git commands.
+Always use the /git-commit skill when creating git commits. Never commit directly with git commands.
 </committing>
 <me_directory>
 Projects may have a `.me/` directory in the project root. This is a personal git repo (globally gitignored) for versioning project-specific Claude config and scripts without polluting the project repo.
@@ -131,7 +131,7 @@ Contents symlinked back into the project via `.me/install.sh`:
 
 The `scripts/` directory can contain anything useful for the project: build helpers, data seeders, environment setup, deploy shortcuts, debug utilities. These are personal tools, not shared with the team.
 
-Use the `/me:claude` skill to set up a `.me/` directory in a new project.
+Use the `/me-claude` skill to set up a `.me/` directory in a new project.
 </me_directory>
 
 <current_year>
