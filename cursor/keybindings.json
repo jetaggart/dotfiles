@@ -98,5 +98,15 @@
   {
     "key": "ctrl+shift+o",
     "command": "workbench.action.editorLayoutSingle"
+  },
+  {
+    "key": "ctrl+cmd+up",
+    "command": "editor.action.smartSelect.expand",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+cmd+down",
+    "command": "editor.action.smartSelect.shrink",
+    "when": "editorTextFocus"
   }
 ]
