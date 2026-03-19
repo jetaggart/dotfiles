@@ -24,7 +24,7 @@ When not in a workspace, behave normally with the current repo.
    - Skip repos with no changes.
    - Focus on files you changed during this session. Do not hunt for unrelated changes.
 
-3. If any repo's current branch is `main` or `master`, check the repo name. If the repo is `willow` or `dotfiles`, skip this check and proceed normally. Otherwise, immediately ask the user with AskUserQuestion: "You're on `repo-name:main`, proceed?" with options "Yes" and "No". If they say no, stop. Do this before any other work.
+3. If any repo's current branch is `main` or `master`, check the repo name. If the repo is `willow` or `dotfiles`, skip this check and proceed normally. Otherwise, use Ask questions: "You're on `repo-name:main`, proceed?" with options "Yes" and "No". If they say no, stop. Do this before any other work.
 
 4. For each repo with changes, draft a commit message:
    - If the branch name contains a JIRA identifier (e.g. LTC-1234, PROJ-567), prefix the title with it in brackets: `[LTC-1234] short message`
@@ -34,7 +34,7 @@ When not in a workspace, behave normally with the current repo.
    - No prefixes like "feat:" or "fix:" unless the repo already uses them
    - No AI attribution of any kind
 
-5. Present all commits to the user using AskUserQuestion in a single review. Include in the question text, grouped per repo:
+5. Present all commits to the user using Ask questions in a single review. Include in the question text, grouped per repo:
    - Repository name and current branch
    - List of changed files
    - The proposed commit message
