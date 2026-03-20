@@ -64,7 +64,9 @@ Go CLI tools built with Bubble Tea and Lip Gloss. Compiled to `~/bin/tools/` via
   - `q d` - delete current conversation
 - `ws` - workspace manager using git worktrees. Creates isolated workspaces with focused directory subsets. Generates `CLAUDE.local.md` with `<focus>` blocks. Symlinks the source's `CLAUDE.md` into the workspace if it exists.
   - `ws create [--tmux] <preset>` or `ws create [--tmux] <source> <target>` - create workspace
-  - `ws add` - add repo to current workspace
+  - `ws add` - add repos to current workspace (same pick → check → focus flow as create)
+  - `ws remove` - remove one repo from current workspace
+  - `ws color` - pick a random title bar theme in the current workspace `.code-workspace`
   - `ws delete <dir>` - remove workspace and worktrees
   - Presets: `lettuce` (~/code/lettuce)
 </tools>

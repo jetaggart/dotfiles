@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,7 +29,6 @@ var (
 	titleBar     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("213"))
 	panel        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 1)
 	summaryPanel = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("35")).Padding(0, 1)
-	historyPanel = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240")).Padding(0, 1).MarginBottom(1)
 	rule         = lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
 	statusPanel  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).Padding(0, 1).MarginBottom(1)
 
@@ -139,6 +139,27 @@ func readFocusDirs(wsDir string) focusMap {
 	return result
 }
 
+func workspaceTitleBarTheme() (activeBG, activeFG, inactiveBG, inactiveFG string) {
+	themes := []struct {
+		aB, aF, iB, iF string
+	}{
+		{"#4c6a8c", "#f2f4f8", "#3d5570", "#d8dce4"},
+		{"#5c7a5c", "#f5faf3", "#4a634a", "#dce6dc"},
+		{"#7a5c8c", "#faf5fc", "#634a70", "#e6dce8"},
+		{"#8c6a4c", "#fffaf5", "#705540", "#e8e0dc"},
+		{"#4c7a8c", "#f3fafc", "#3d6270", "#dce8ec"},
+		{"#6a5c8c", "#f6f4fc", "#554a70", "#e2dce8"},
+		{"#5c6a7a", "#f6f8fa", "#4a5563", "#dce0e6"},
+		{"#7a6a4c", "#faf8f2", "#635540", "#e8e4dc"},
+		{"#5b6e8a", "#f0f4fa", "#495a73", "#d4dae6"},
+		{"#6b8a5b", "#f4faf0", "#567047", "#dae6d4"},
+		{"#8a5b6e", "#faf0f4", "#704956", "#e6d4da"},
+		{"#5e8a7a", "#f0faf7", "#4b7063", "#d4e6df"},
+	}
+	t := themes[rand.N(len(themes))]
+	return t.aB, t.aF, t.iB, t.iF
+}
+
 func writeFocusConfig(wsDir string, focus focusMap) {
 	type entry struct {
 		repo string
@@ -200,11 +221,75 @@ func writeFocusConfig(wsDir string, focus focusMap) {
 			folders = append(folders, folder{e.repo, e.repo})
 		}
 	}
+	aB, aF, iB, iF := workspaceTitleBarTheme()
+	wsName := filepath.Base(wsDir)
 	wsData, _ := json.MarshalIndent(map[string]any{
-		"folders":  folders,
-		"settings": map[string]any{"files.exclude": map[string]any{"**/.git": true, ".ws.json": true}},
+		"folders": folders,
+		"settings": map[string]any{
+			"window.title":  wsName + " — ${rootName}${separator}${appName}",
+			"files.exclude": map[string]any{"**/.git": true, ".ws.json": true},
+			"workbench.colorCustomizations": map[string]any{
+				"titleBar.activeBackground":   aB,
+				"titleBar.activeForeground":   aF,
+				"titleBar.inactiveBackground": iB,
+				"titleBar.inactiveForeground": iF,
+			},
+		},
 	}, "", "  ")
 	os.WriteFile(filepath.Join(wsDir, filepath.Base(wsDir)+".code-workspace"), append(wsData, '\n'), 0644)
+}
+
+func workspaceCodeWorkspacePath(wsDir string) string {
+	return filepath.Join(wsDir, filepath.Base(wsDir)+".code-workspace")
+}
+
+func applyRandomWorkspaceTitleBar(wsDir string) error {
+	path := workspaceCodeWorkspacePath(wsDir)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return err
+	}
+	settings, _ := doc["settings"].(map[string]any)
+	if settings == nil {
+		settings = map[string]any{}
+		doc["settings"] = settings
+	}
+	aB, aF, iB, iF := workspaceTitleBarTheme()
+	ccNew := map[string]any{
+		"titleBar.activeBackground":   aB,
+		"titleBar.activeForeground":   aF,
+		"titleBar.inactiveBackground": iB,
+		"titleBar.inactiveForeground": iF,
+	}
+	existing, _ := settings["workbench.colorCustomizations"].(map[string]any)
+	if existing == nil {
+		settings["workbench.colorCustomizations"] = ccNew
+	} else {
+		for k, v := range ccNew {
+			existing[k] = v
+		}
+	}
+	out, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, append(out, '\n'), 0644)
+}
+
+func runColor() {
+	_, wsDir, ok := findWsDir()
+	if !ok {
+		fmt.Fprintln(os.Stderr, "not in a workspace directory (no .ws.json found)")
+		os.Exit(1)
+	}
+	if err := applyRandomWorkspaceTitleBar(wsDir); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 }
 
 func getDefaultBranch(repoPath string) string {
@@ -325,237 +410,6 @@ func createWorktree(repoPath, dest, branch string) error {
 	return nil
 }
 
-type multiSelectModel struct {
-	message        string
-	options        []string
-	optionDim      []bool
-	cursor         int
-	selected       map[int]bool
-	exclusiveFirst bool
-	done           bool
-	cancelled      bool
-}
-
-func newMultiSelect(message string, options []string, exclusiveFirst bool) multiSelectModel {
-	dim := make([]bool, len(options))
-	if exclusiveFirst && len(options) > 0 {
-		dim[0] = true
-	}
-	return multiSelectModel{
-		message:        message,
-		options:        options,
-		optionDim:      dim,
-		selected:       make(map[int]bool),
-		exclusiveFirst: exclusiveFirst,
-	}
-}
-
-func (m multiSelectModel) Init() tea.Cmd { return nil }
-
-func (m multiSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
-		switch msg.String() {
-		case "up", "k":
-			m.cursor--
-			if m.cursor < 0 {
-				m.cursor = len(m.options) - 1
-			}
-		case "down", "j":
-			m.cursor++
-			if m.cursor >= len(m.options) {
-				m.cursor = 0
-			}
-		case "space":
-			if m.selected[m.cursor] {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = true
-				if m.exclusiveFirst {
-					if m.cursor == 0 {
-						for i := 1; i < len(m.options); i++ {
-							delete(m.selected, i)
-						}
-					} else {
-						delete(m.selected, 0)
-					}
-				}
-			}
-		case "a":
-			if len(m.selected) == len(m.options) {
-				m.selected = make(map[int]bool)
-			} else if m.exclusiveFirst {
-				m.selected = make(map[int]bool)
-				for i := 1; i < len(m.options); i++ {
-					m.selected[i] = true
-				}
-			} else {
-				m.selected = make(map[int]bool)
-				for i := range m.options {
-					m.selected[i] = true
-				}
-			}
-		case "enter":
-			if len(m.selected) > 0 {
-				m.done = true
-				return m, nil
-			}
-		case "esc", "ctrl+c":
-			m.cancelled = true
-			return m, nil
-		}
-	}
-	return m, nil
-}
-
-func (m multiSelectModel) View() tea.View {
-	return tea.NewView(m.render())
-}
-
-func (m multiSelectModel) render() string {
-	var s strings.Builder
-	s.WriteString(cyan.Bold(true).Render(m.message) + "\n")
-	s.WriteString(rule.Render(strings.Repeat("─", promptUnderline(len(m.message)))) + "\n")
-	for i, opt := range m.options {
-		cursor := " "
-		if i == m.cursor {
-			cursor = cyan.Render(">")
-		}
-		check := gray.Render(" ◻")
-		if m.selected[i] {
-			check = green.Render(" ◼")
-		}
-		label := opt
-		if m.optionDim[i] {
-			label = gray.Render(opt)
-		}
-		s.WriteString(fmt.Sprintf("%s%s %s\n", cursor, check, label))
-	}
-	s.WriteString(magenta.Render("space") + gray.Render(" toggle  ") + magenta.Render("a") + gray.Render(" all  ") + magenta.Render("enter") + gray.Render(" confirm") + "\n")
-	return s.String()
-}
-
-func (m multiSelectModel) Values() []string {
-	var indices []int
-	for i := range m.selected {
-		indices = append(indices, i)
-	}
-	sort.Ints(indices)
-	var values []string
-	for _, i := range indices {
-		values = append(values, m.options[i])
-	}
-	return values
-}
-
-type selectModel struct {
-	message   string
-	options   []string
-	hints     []string
-	cursor    int
-	done      bool
-	cancelled bool
-}
-
-func newSelect(message string, options, hints []string) selectModel {
-	return selectModel{message: message, options: options, hints: hints}
-}
-
-func (m selectModel) Init() tea.Cmd { return nil }
-
-func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
-		switch msg.String() {
-		case "up", "k":
-			m.cursor--
-			if m.cursor < 0 {
-				m.cursor = len(m.options) - 1
-			}
-		case "down", "j":
-			m.cursor++
-			if m.cursor >= len(m.options) {
-				m.cursor = 0
-			}
-		case "enter":
-			m.done = true
-			return m, nil
-		case "esc", "ctrl+c":
-			m.cancelled = true
-			return m, nil
-		}
-	}
-	return m, nil
-}
-
-func (m selectModel) View() tea.View {
-	return tea.NewView(m.render())
-}
-
-func (m selectModel) render() string {
-	var s strings.Builder
-	s.WriteString(cyan.Bold(true).Render(m.message) + "\n")
-	s.WriteString(rule.Render(strings.Repeat("─", promptUnderline(len(m.message)))) + "\n")
-	for i, opt := range m.options {
-		cursor := " "
-		if i == m.cursor {
-			cursor = cyan.Render(">")
-		}
-		hint := ""
-		if i < len(m.hints) && m.hints[i] != "" {
-			hint = " " + gray.Render(m.hints[i])
-		}
-		s.WriteString(fmt.Sprintf("%s %s%s\n", cursor, opt, hint))
-	}
-	s.WriteString(magenta.Render("j") + gray.Render("/") + magenta.Render("k") + gray.Render(" move  ") + magenta.Render("enter") + gray.Render(" pick") + "\n")
-	return s.String()
-}
-
-type confirmModel struct {
-	message   string
-	done      bool
-	result    bool
-	cancelled bool
-}
-
-func newConfirm(message string) confirmModel {
-	return confirmModel{message: message}
-}
-
-func (m confirmModel) Init() tea.Cmd { return nil }
-
-func (m confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
-		switch msg.String() {
-		case "y", "Y":
-			m.result = true
-			m.done = true
-			return m, nil
-		case "n", "N":
-			m.result = false
-			m.done = true
-			return m, nil
-		case "esc", "ctrl+c":
-			m.cancelled = true
-			return m, nil
-		}
-	}
-	return m, nil
-}
-
-func (m confirmModel) View() tea.View {
-	return tea.NewView(cyan.Bold(true).Render(m.message) + " " + gray.Render("(y/n)") + "\n")
-}
-
-func promptUnderline(titleLen int) int {
-	w := titleLen + 12
-	if w < 36 {
-		w = 36
-	}
-	if w > 58 {
-		w = 58
-	}
-	return w
-}
-
 func listLeftovers(dir string) []string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -590,35 +444,20 @@ func runCreate(source, workspaces string, useTmux bool) {
 		fmt.Println(red.Render("no git repos found in " + source))
 		return
 	}
-	if _, err := tea.NewProgram(newAppCreate(source, workspaces, repos, useTmux)).Run(); err != nil {
+	final, err := tea.NewProgram(newAppCreate(source, workspaces, repos, useTmux)).Run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func runAdd(source, wsDir string) {
-	repos := findRepos(source)
-	if len(repos) == 0 {
-		fmt.Println(red.Render("no git repos found in " + source))
-		return
-	}
-	hints := make([]string, len(repos))
-	for i, repo := range repos {
-		if _, err := os.Stat(filepath.Join(wsDir, repo)); err == nil {
-			hints[i] = "already in workspace"
-		}
-	}
-	if _, err := tea.NewProgram(newAppAdd(source, wsDir, repos, hints)).Run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if am, ok := final.(*appModel); ok && am.exitSummary != "" {
+		fmt.Println(am.exitSummary)
 	}
 }
 
-func runDelete(source, wsDir string) {
+func workspaceRepoDirs(wsDir string) ([]string, error) {
 	entries, err := os.ReadDir(wsDir)
 	if err != nil {
-		fmt.Println(red.Render("cannot read workspace: " + err.Error()))
-		return
+		return nil, err
 	}
 	var repos []string
 	for _, e := range entries {
@@ -628,6 +467,64 @@ func runDelete(source, wsDir string) {
 		repos = append(repos, e.Name())
 	}
 	sort.Strings(repos)
+	return repos, nil
+}
+
+func removeOneWorktree(wsDir, source, repo string) error {
+	repoDir := filepath.Join(wsDir, repo)
+	parentRepo := filepath.Join(source, repo)
+	if _, err := os.Stat(filepath.Join(parentRepo, ".git")); err == nil {
+		_, err := git.RunArgs([]string{"worktree", "remove", repoDir, "--force"}, parentRepo)
+		return err
+	}
+	return os.RemoveAll(repoDir)
+}
+
+func runAdd(source, wsDir string) {
+	repos := findRepos(source)
+	if len(repos) == 0 {
+		fmt.Println(red.Render("no git repos found in " + source))
+		return
+	}
+	final, err := tea.NewProgram(newAppAdd(source, wsDir, repos)).Run()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if am, ok := final.(*appModel); ok && am.exitSummary != "" {
+		fmt.Println(am.exitSummary)
+	}
+}
+
+func runRemove(source, wsDir string) {
+	repos, err := workspaceRepoDirs(wsDir)
+	if err != nil {
+		fmt.Println(red.Render("cannot read workspace: " + err.Error()))
+		return
+	}
+	if len(repos) == 0 {
+		fmt.Println(red.Render("no repos in workspace"))
+		return
+	}
+	var dirty []string
+	for _, repo := range repos {
+		if git.Run("status --porcelain", filepath.Join(wsDir, repo)) != "" {
+			dirty = append(dirty, repo)
+		}
+	}
+	sort.Strings(dirty)
+	if _, err := tea.NewProgram(newAppRemove(source, wsDir, repos, dirty)).Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runDelete(source, wsDir string) {
+	repos, err := workspaceRepoDirs(wsDir)
+	if err != nil {
+		fmt.Println(red.Render("cannot read workspace: " + err.Error()))
+		return
+	}
 	if len(repos) == 0 {
 		fmt.Println(red.Render("no repos in workspace"))
 		return
@@ -686,6 +583,21 @@ func main() {
 		}
 		runAdd(source, wsDir)
 
+	case "remove":
+		source, wsDir, ok := findWsDir()
+		if !ok {
+			fmt.Fprintln(os.Stderr, "not in a workspace directory (no .ws.json found)")
+			os.Exit(1)
+		}
+		runRemove(source, wsDir)
+
+	case "color":
+		if len(rest) != 0 {
+			fmt.Fprintln(os.Stderr, "usage: ws color")
+			os.Exit(1)
+		}
+		runColor()
+
 	case "delete":
 		if len(rest) != 1 {
 			fmt.Fprintln(os.Stderr, "usage: ws delete <workspace_dir>")
@@ -717,6 +629,8 @@ func printUsage() {
 		"",
 		cyan.Render("create")+gray.Render("  ws create [--tmux] <preset>")+magenta.Render(" · ")+gray.Render("ws create [--tmux] <src> <dst>"),
 		cyan.Render("add")+gray.Render("     ws add")+magenta.Render(" · ")+gray.Render("from inside a workspace"),
+		cyan.Render("remove")+gray.Render("   ws remove")+magenta.Render(" · ")+gray.Render("from inside a workspace"),
+		cyan.Render("color")+gray.Render("    ws color")+magenta.Render(" · ")+gray.Render("random title bar theme in .code-workspace"),
 		cyan.Render("delete")+gray.Render("  ws delete <dir>"),
 		"",
 		gray.Render("presets  ")+yellow.Render(presetNames()),
