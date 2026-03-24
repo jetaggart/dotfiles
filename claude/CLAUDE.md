@@ -114,13 +114,29 @@ A project's CLAUDE.local.md may contain a `<focus>` block listing directories to
 Run each shell command as a separate Bash tool call. Never chain commands with && or ||. Never use 2>&1 redirects or shell expansions like $() in commands. Keep each command simple and single-purpose to avoid triggering approval prompts.
 </shell_commands>
 
+<code_intelligence>
+Prefer LSP over Grep/Read for code navigation. it's faster, precise, and avoids reading entire files:
+- `workspaceSymbol` to find where something is defined
+- `findReferences` to see all usages across the codebase
+- `goToDefinition` / `goToImplementation` to jump to source
+- `hover` for type info without reading the file
+
+Use Grep only when LSP isn't available or for text/pattern searches (comments, strings, config).
+
+After writing or editing code, check LSP diagnostics and fix errors before proceeding. LSP is configured for Python (pyright), TypeScript, and Go (gopls).
+</code_intelligence>
+
 <golang>
 When looking up Go package APIs, function signatures, or types, use WebFetch on pkg.go.dev instead of running go doc or other local commands. Use the gopls LSP plugin for completions and diagnostics. Read source files directly rather than running shell commands to inspect code.
 </golang>
 
-<committing>
+<git_safety>
 Always use the /git-commit skill when creating git commits. Never commit directly with git commands.
-</committing>
+
+Never run git push. Under no circumstances, ever. Pushing is always done manually.
+
+Before running any destructive git operation, stop and ask for explicit confirmation. This includes: reset --hard, checkout/restore that discards changes, clean -f, branch -D, rebase that rewrites history, and amend of published commits. Describe what the command will do and wait for a "yes" before proceeding.
+</git_safety>
 <me_directory>
 Projects may have a `.me/` directory in the project root. This is a personal git repo (globally gitignored) for versioning project-specific Claude config and scripts without polluting the project repo.
 

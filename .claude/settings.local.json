@@ -24,7 +24,11 @@
       "Bash(claude config:*)",
       "Bash(/Users/jetaggart/.local/bin/claude --help)",
       "Bash(cat:*)",
-      "Read(//Users/jetaggart/.claude/**)"
+      "Read(//Users/jetaggart/.claude/**)",
+      "Bash(go build:*)",
+      "Bash(go mod:*)",
+      "Bash(go vet:*)",
+      "LSP"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce"

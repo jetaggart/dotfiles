@@ -774,10 +774,19 @@ func (m *appModel) beginAddBuildAll() tea.Cmd {
 			repoPath := filepath.Join(source, repo)
 			dest := filepath.Join(wsDir, repo)
 			err := createWorktree(repoPath, dest, wsBranch)
+			reused := false
+			if err != nil && isExistingWorkspaceWorktree(repoPath, dest, wsBranch) {
+				err = nil
+				reused = true
+			}
 			if err != nil {
 				results = append(results, wtreeResult{repo: repo, ok: false, msg: git.ErrorMsg(err)})
 			} else {
-				results = append(results, wtreeResult{repo: repo, ok: true, msg: "focus: " + focusLabel(focusNew[repo])})
+				msg := "focus: " + focusLabel(focusNew[repo])
+				if reused {
+					msg = "worktree already present, " + msg
+				}
+				results = append(results, wtreeResult{repo: repo, ok: true, msg: msg})
 			}
 		}
 		ch <- evtStatus{phase: "focus & workspace file", detail: "merge CLAUDE.local.md  ·  " + filepath.Base(wsDir) + ".code-workspace"}

@@ -12,19 +12,20 @@ import (
 	"strings"
 
 	"dotfiles/tools/internal/git"
+	"dotfiles/tools/internal/ui"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
 var (
-	cyan    = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
-	gray    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	green   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	yellow  = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	red     = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	bold    = lipgloss.NewStyle().Bold(true)
-	magenta = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
+	cyan    = ui.Cyan
+	gray    = ui.Gray
+	green   = ui.Green
+	yellow  = ui.Yellow
+	red     = ui.Red
+	bold    = ui.Bold
+	magenta = ui.Magenta
 
 	titleBar     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("213"))
 	panel        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 1)
@@ -364,6 +365,34 @@ func symlinkIgnoredDirs(srcRoot, dstRoot string) {
 		}
 	}
 	walk(srcRoot)
+}
+
+func isExistingWorkspaceWorktree(parentRepo, dest, wsBranch string) bool {
+	gitMarker := filepath.Join(dest, ".git")
+	if _, err := os.Lstat(gitMarker); err != nil {
+		return false
+	}
+	listOut, err := git.RunArgs([]string{"worktree", "list", "--porcelain"}, parentRepo)
+	if err != nil {
+		return false
+	}
+	want := filepath.Clean(dest)
+	for _, line := range strings.Split(listOut, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "worktree ") {
+			continue
+		}
+		p := strings.TrimSpace(strings.TrimPrefix(line, "worktree "))
+		if filepath.Clean(p) != want {
+			continue
+		}
+		cur, err := git.RunArgs([]string{"rev-parse", "--abbrev-ref", "HEAD"}, dest)
+		if err != nil || cur != wsBranch {
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 func createWorktree(repoPath, dest, branch string) error {

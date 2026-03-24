@@ -10,240 +10,16 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"dotfiles/tools/internal/ui"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 var (
 	pomDir      = filepath.Join(os.Getenv("HOME"), ".pom")
 	historyFile = filepath.Join(pomDir, "history.csv")
-
-	cyan   = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
-	gray   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	red    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	bold   = lipgloss.NewStyle().Bold(true)
-
-	boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("6")).
-			Padding(1, 3)
-
-	timerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("6")).
-			Bold(true)
-
-	dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("8")).
-			Italic(true)
 )
-
-type mode int
-
-const (
-	modePom mode = iota
-	modeBreak
-	modeEditTask
-)
-
-type tickMsg time.Time
-
-func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
-}
-
-type model struct {
-	mode       mode
-	minutes    int
-	task       string
-	startTime  time.Time
-	now        time.Time
-	inputBuf   string
-	taskBuf    string
-	breakStart time.Time
-	saved      bool
-	width      int
-}
-
-func initialModel(minutes int, task string) model {
-	now := time.Now()
-	return model{
-		mode:      modePom,
-		minutes:   minutes,
-		task:      task,
-		startTime: now,
-		now:       now,
-		width:     80,
-	}
-}
-
-func (m model) Init() tea.Cmd {
-	return tickCmd()
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		return m, nil
-
-	case tickMsg:
-		m.now = time.Time(msg)
-		if m.mode == modePom {
-			total := m.minutes * 60
-			elapsed := int(m.now.Sub(m.startTime).Seconds())
-			if elapsed >= total && !m.saved {
-				m.saved = true
-				saveHistory(m.startTime, total, m.task)
-				go notify(m.task, m.minutes)
-				m.mode = modeBreak
-				m.breakStart = m.now
-			}
-		}
-		return m, tickCmd()
-
-	case tea.KeyMsg:
-		switch m.mode {
-		case modePom:
-			if msg.String() == "e" {
-				elapsed := int(m.now.Sub(m.startTime).Seconds())
-				m.saved = true
-				saveHistory(m.startTime, elapsed, m.task)
-				m.mode = modeBreak
-				m.breakStart = m.now
-			}
-			if msg.String() == "ctrl+c" {
-				if !m.saved {
-					elapsed := int(m.now.Sub(m.startTime).Seconds())
-					saveHistory(m.startTime, elapsed, m.task)
-				}
-				return m, tea.Quit
-			}
-
-		case modeEditTask:
-			switch msg.String() {
-			case "enter":
-				m.task = m.taskBuf
-				m.taskBuf = ""
-				m.mode = modeBreak
-			case "esc":
-				m.taskBuf = ""
-				m.mode = modeBreak
-			case "backspace":
-				if len(m.taskBuf) > 0 {
-					m.taskBuf = m.taskBuf[:len(m.taskBuf)-1]
-				}
-			default:
-				if len(msg.String()) == 1 {
-					m.taskBuf += msg.String()
-				}
-			}
-
-		case modeBreak:
-			switch msg.String() {
-			case "enter":
-				next := m.minutes
-				if m.inputBuf != "" {
-					if n, err := strconv.Atoi(m.inputBuf); err == nil {
-						next = n
-					}
-				}
-				m.minutes = next
-				m.startTime = time.Now()
-				m.now = m.startTime
-				m.inputBuf = ""
-				m.breakStart = time.Time{}
-				m.saved = false
-				m.mode = modePom
-				return m, tickCmd()
-			case "t":
-				m.taskBuf = m.task
-				m.mode = modeEditTask
-			case "esc":
-				return m, tea.Quit
-			case "ctrl+c":
-				return m, tea.Quit
-			case "backspace":
-				if len(m.inputBuf) > 0 {
-					m.inputBuf = m.inputBuf[:len(m.inputBuf)-1]
-				}
-			default:
-				if len(msg.String()) == 1 && msg.String() >= "0" && msg.String() <= "9" {
-					m.inputBuf += msg.String()
-				}
-			}
-		}
-	}
-	return m, nil
-}
-
-func (m model) View() string {
-	var s strings.Builder
-
-	var content strings.Builder
-
-	switch m.mode {
-	case modeEditTask:
-		content.WriteString(yellow.Bold(true).Render("Edit task:") + "\n\n")
-		content.WriteString(cyan.Render(m.taskBuf) + gray.Render("_") + "\n\n")
-		content.WriteString(dimStyle.Render("enter to save, esc to cancel"))
-
-	case modeBreak:
-		breakElapsed := int(m.now.Sub(m.breakStart).Seconds())
-		nextMinutes := strconv.Itoa(m.minutes)
-		if m.inputBuf != "" {
-			nextMinutes = m.inputBuf
-		}
-
-		content.WriteString(green.Bold(true).Render("Break time!") + "\n\n")
-		content.WriteString(gray.Render("break  ") + yellow.Bold(true).Render(formatRemaining(breakElapsed)) + "\n")
-		if m.task != "" {
-			content.WriteString(gray.Render("task   ") + cyan.Render(m.task) + "\n")
-		}
-		content.WriteString("\n")
-		content.WriteString(dimStyle.Render("enter") + gray.Render(" start ") + green.Bold(true).Render(nextMinutes+"m") + gray.Render(" pom") + "\n")
-		if m.inputBuf != "" {
-			content.WriteString(dimStyle.Render("type numbers to change duration") + "\n")
-		}
-		content.WriteString(dimStyle.Render("t") + gray.Render(" edit task  ") + dimStyle.Render("esc") + gray.Render(" quit"))
-
-	case modePom:
-		total := m.minutes * 60
-		elapsed := int(m.now.Sub(m.startTime).Seconds())
-		remaining := total - elapsed
-		if remaining < 0 {
-			remaining = 0
-		}
-		percent := 0
-		if total > 0 {
-			percent = min(100, elapsed*100/total)
-		}
-
-		endTime := m.startTime.Add(time.Duration(m.minutes) * time.Minute)
-		barWidth := m.width - 18
-		if barWidth > 40 {
-			barWidth = 40
-		}
-		if barWidth < 10 {
-			barWidth = 10
-		}
-
-		timeRange := gray.Render(formatTime(m.startTime)) + gray.Render(" → ") + green.Render(formatTime(endTime))
-		content.WriteString(timeRange + "\n\n")
-		content.WriteString(timerStyle.Render(formatRemainingLarge(remaining)) + "\n\n")
-		content.WriteString(gradientBar(percent, barWidth) + " " + dimStyle.Render(fmt.Sprintf("%d%%", percent)) + "\n")
-		if m.task != "" {
-			content.WriteString("\n" + gray.Render(m.task))
-		}
-		content.WriteString("\n\n" + dimStyle.Render("e") + gray.Render(" end early  ") + dimStyle.Render("ctrl+c") + gray.Render(" quit"))
-	}
-
-	s.WriteString(boxStyle.Render(content.String()))
-	s.WriteString("\n")
-
-	return s.String()
-}
 
 func formatTime(t time.Time) string {
 	h := t.Hour() % 12
@@ -283,7 +59,7 @@ func gradientBar(percent, width int) string {
 		style := lipgloss.NewStyle().Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", r, g, b)))
 		s.WriteString(style.Render("█"))
 	}
-	s.WriteString(gray.Render(strings.Repeat("░", empty)))
+	s.WriteString(ui.Gray.Render(strings.Repeat("░", empty)))
 	return s.String()
 }
 
@@ -319,7 +95,7 @@ func displayHistory(count int) {
 	}
 
 	var content strings.Builder
-	content.WriteString(bold.Render("DATE                 DURATION   TASK") + "\n\n")
+	content.WriteString(ui.Bold.Render("DATE                 DURATION   TASK") + "\n\n")
 	for i := len(lines) - 1; i >= start; i-- {
 		r := csv.NewReader(strings.NewReader(lines[i]))
 		fields, err := r.Read()
@@ -335,7 +111,7 @@ func displayHistory(count int) {
 		if s > 0 {
 			duration = fmt.Sprintf("%dm%ds", mins, s)
 		}
-		content.WriteString(fmt.Sprintf("%s   %s   %s\n", gray.Render(date), cyan.Render(fmt.Sprintf("%-8s", duration)), task))
+		content.WriteString(fmt.Sprintf("%s   %s   %s\n", ui.Gray.Render(date), ui.Cyan.Render(fmt.Sprintf("%-8s", duration)), task))
 	}
 
 	fmt.Println()
@@ -349,6 +125,17 @@ func notify(task string, minutes int) {
 		msg = fmt.Sprintf("%d minute session finished", minutes)
 	}
 	exec.Command("osascript", "-e", fmt.Sprintf(`display notification "%s" with title "Pomodoro Complete!" sound name "default"`, msg)).Run()
+}
+
+func printUsage() {
+	head := titleBar.Render("pom") + ui.Gray.Render(" — pomodoro timer")
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		head,
+		"",
+		ui.Cyan.Render("start")+ui.Gray.Render("    pom [minutes] [task]"),
+		ui.Cyan.Render("history")+ui.Gray.Render("  pom -h [count]"),
+	)
+	fmt.Fprintln(os.Stderr, boxStyle.Padding(0, 1).Render(body))
 }
 
 func main() {
@@ -376,8 +163,7 @@ func main() {
 		}
 	}
 
-	p := tea.NewProgram(initialModel(minutes, task))
-	if _, err := p.Run(); err != nil {
+	if _, err := tea.NewProgram(newApp(minutes, task)).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

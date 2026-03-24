@@ -103,10 +103,11 @@
   "workbench.editor.pinnedTabSizing": "compact",
   "editor.lineHeight": 1.25,
   "git.blame.editorDecoration.enabled": false,
-  "claudeCode.preferredLocation": "sidebar",
+  "claudeCode.preferredLocation": "panel",
   "claudeCode.selectedModel": "default",
   "dotnetAcquisitionExtension.enableTelemetry": false,
   "workbench.colorTheme": "Default Light Modern",
   "githubPullRequests.terminalLinksHandler": "github",
-  "diffEditor.renderSideBySide": false
+  "diffEditor.renderSideBySide": false,
+  "claudeCode.useTerminal": true
 }

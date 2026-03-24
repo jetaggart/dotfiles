@@ -14,6 +14,7 @@ export PNPM_HOME="/Users/jetaggart/Library/pnpm"
 export PATH="/Users/jetaggart/.cursor/extensions/bin:$PNPM_HOME:$PATH"
 export PATH="/Users/jetaggart/bin/tools:$PNPM_HOME:$PATH"
 export c="$HOME/code"
+export ENABLE_LSP_TOOL=1
 export PATH="$PATH:$(go env GOPATH)/bin"
 
 # --- Runtime Setup ---
@@ -428,3 +429,4 @@ k() {
   fi
 }
 
+export PATH=$PATH:$HOME/.maestro/bin
