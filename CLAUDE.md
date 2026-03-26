@@ -6,8 +6,8 @@ Personal dotfiles for macOS. All configs are symlinked from this repo into their
 
 Run `./install.sh` from the repo root. It:
 1. Symlinks config files to their system locations
-2. Builds Go CLI tools via `make` in `tools/go/`
-3. Installs compiled binaries to `~/bin/tools/` (on PATH)
+2. Builds TypeScript CLI tools via `bun build --compile` in `tools/tool/`
+3. Installs compiled binary (`tool`) to `~/bin/tools/` (on PATH)
 
 Run it again after any changes to apply them.
 
@@ -51,13 +51,13 @@ Use `trash` instead of `rm`. The `trash()` function in zshrc moves files to `~/.
 - `claude/skills/` - global skills (git-commit, github-pr, github-lookup, me-claude, sub-agent, simplify, python, react, ws)
 </claude_config>
 
-## Tools (`tools/go/`)
+## Tools (`tools/tool/`)
 
-Go CLI tools built with Bubble Tea and Lip Gloss. Compiled to `~/bin/tools/` via `make`.
+TypeScript CLI tools built with Ink and React. Compiled to a single native binary (`tool`) via `bun build --compile` → `~/bin/tools/tool`. Shell aliases (`pom`, `ws`, `q`) route to `tool <subcommand>`.
 
 <tools>
-- `pom` - pomodoro timer with terminal UI (Bubble Tea). Usage: `pom [minutes] [task]` or `pom -h [count]` for history. Saves sessions to `~/.pom/history.csv`.
-- `query` (aliased as `q` with `noglob`) - quick question tool using Claude. Supports conversation continuation. Stores history in `~/.local/share/q/`.
+- `pom` - pomodoro timer with terminal UI (Ink). Usage: `pom [minutes] [task]` or `pom -h [count]` for history. Saves sessions to `~/.pom/history.csv`.
+- `q` (aliased with `noglob`) - quick question tool using Claude. Supports conversation continuation. Stores history in `~/.local/share/q/`.
   - `q <question>` or `q n <question>` - new question (opus)
   - `q c <question>` - continue previous conversation (opus)
   - `q q <question>` - quick one-shot (sonnet)
@@ -71,9 +71,9 @@ Go CLI tools built with Bubble Tea and Lip Gloss. Compiled to `~/bin/tools/` via
   - Presets: `lettuce` (~/code/lettuce)
 </tools>
 
-Shared code in `tools/go/internal/`: `git/` (exec helpers), `ui/` (Lip Gloss style constants).
+Shared code in `tools/tool/src/lib/`: `git.ts` (exec helpers), `styles.ts` (chalk color constants).
 
-To add a new tool: create `tools/go/cmd/<name>/main.go`, add target to `tools/go/Makefile`.
+To add a new tool: create `tools/tool/src/<name>/main.ts`, add case to `tools/tool/src/main.ts` switch.
 
 ## Zsh Highlights
 

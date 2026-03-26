@@ -108,6 +108,5 @@
   "dotnetAcquisitionExtension.enableTelemetry": false,
   "workbench.colorTheme": "Default Light Modern",
   "githubPullRequests.terminalLinksHandler": "github",
-  "diffEditor.renderSideBySide": false,
-  "claudeCode.useTerminal": true
+  "diffEditor.renderSideBySide": false
 }

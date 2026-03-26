@@ -1,0 +1,17 @@
+{
+  "name": "tool",
+  "private": true,
+  "scripts": {
+    "build": "bun build src/main.ts --compile --outfile $HOME/bin/tools/tool"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "ink": "^6.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.0.0",
+    "react-devtools-core": "^7.0.1"
+  }
+}

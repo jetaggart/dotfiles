@@ -17,6 +17,7 @@ Do the right thing, not the clever or easy thing. Do not take shortcuts.
 - When something is broken, fix the root cause. Do not paper over symptoms.
 - If the right solution is more work, that's fine. Do the work.
 - Use the best, modern, standard tool for the job. Prefer well-maintained libraries and current APIs over legacy or obscure alternatives.
+- Prefer non-defensive code. Do not silently handle bad state with fallbacks, defaults, or optional chaining that masks bugs. If something should exist, assert it exists and crash if it doesn't. Only be defensive at system boundaries where external data is genuinely uncertain (API responses, user input, webhook payloads). When checking for state, prefer crash, throw, or assert over inventing clever defaults. Only use defaults when explicitly specified by the user. Defaults belong in the domain that owns the state, not in the caller. Callers should never invent fallback values for things another layer is responsible for.
 </code_quality>
 
 <code_style>
@@ -25,6 +26,7 @@ Write code like a human. Simple, direct, natural. Match existing codebase patter
 - No excessive guard clauses, over-abstraction, or verbosity
 - Only introduce abstractions when required or explicitly requested
 - Three similar lines is better than a premature abstraction
+- Keep it simple. Always pick the straightforward approach over the clever one. Clever code is harder to read, debug, and maintain. If a solution feels smart, simplify it.
 </code_style>
 
 <avoid_overengineering>

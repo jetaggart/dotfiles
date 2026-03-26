@@ -78,8 +78,10 @@ alias ai=aichat
 alias lg=lazygit
 alias fix-dn='find "$HOME/.cursor/extensions" -type f -path "*/ms-dotnettools.csdevkit-*/dist/extension.js" -exec sed -i "" "s/checkHostApp=function(){return!!\[\"Visual Studio Code\"/checkHostApp=function(){return!!\[\"Cursor\",\"Visual Studio Code\"/" {} +'
 alias br='bun run'
+alias pom='tool pom'
+alias ws='tool ws'
 unalias q 2>/dev/null
-alias q='noglob query'
+alias q='noglob tool q'
 
 _q_accept_line() {
   if [[ "$BUFFER" = q\ * ]]; then
@@ -95,6 +97,7 @@ _q_accept_line() {
 }
 zle -N accept-line _q_accept_line
 alias ll='ls -lAh'
+alias godot='/Applications/Godot_mono.app/Contents/MacOS/Godot'
 
 # --- Git: Add ---
 

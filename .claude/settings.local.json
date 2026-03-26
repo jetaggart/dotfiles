@@ -28,10 +28,28 @@
       "Bash(go build:*)",
       "Bash(go mod:*)",
       "Bash(go vet:*)",
-      "LSP"
+      "LSP",
+      "Bash(bun install:*)",
+      "Bash(bun build:*)",
+      "Bash(/tmp/tool-test)",
+      "Bash(bun add:*)",
+      "Bash(/tmp/tool-test q:*)",
+      "Bash(/tmp/tool-test pom:*)",
+      "Bash(/tmp/tool-test ws:*)",
+      "Read(//private/tmp/**)",
+      "Read(//Users/jetaggart/bin/tools/**)",
+      "Bash(~/bin/tools/tool pom:*)",
+      "Bash(TMPDIR=/tmp bun build src/main.ts --compile --outfile /tmp/tool-test2)",
+      "Bash(/tmp/tool-test4 ws:*)",
+      "Bash(/tmp/tool-test4 pom:*)",
+      "Bash(/tmp/tool-test4 q:*)",
+      "Bash(/tmp/tool-test5 pom:*)",
+      "Bash(/tmp/tool-test5 ws:*)",
+      "Bash(/tmp/tool-test5 q:*)"
     ],
     "additionalDirectories": [
-      "/Users/jetaggart/code/lettuce"
+      "/Users/jetaggart/code/lettuce",
+      "/Users/jetaggart/code/dotfiles/tools/tool"
     ]
   }
 }
