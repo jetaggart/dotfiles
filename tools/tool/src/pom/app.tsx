@@ -16,18 +16,16 @@ function formatRemaining(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
 }
 
-function GradientBar({ percent, width }: { percent: number; width: number }) {
-  const filled = Math.floor((percent * width) / 100)
+function ProgressBar({ percent, width }: { percent: number; width: number }) {
+  const filled = Math.round((percent * width) / 100)
   const empty = width - filled
-  let s = ""
-  for (let i = 0; i < filled; i++) {
-    const ratio = i / width
-    const r = Math.floor(66 + ratio * (138 - 66))
-    const g = Math.floor(133 + ratio * (43 - 133))
-    const b = Math.floor(244 + ratio * (226 - 244))
-    s += `\x1b[38;2;${r};${g};${b}m\u2588\x1b[0m`
-  }
-  return <Text>{s}<Text color="gray">{"\u2591".repeat(empty)}</Text> <Text dimColor>{percent}%</Text></Text>
+  return (
+    <Text>
+      <Text color="blue" bold>{"█".repeat(filled)}</Text>
+      <Text color="gray">{"░".repeat(empty)}</Text>
+      <Text> {percent}%</Text>
+    </Text>
+  )
 }
 
 function notify(task: string, minutes: number) {
@@ -98,9 +96,9 @@ function PomApp({ initialMinutes, initialTask }: PomAppProps) {
         setTaskBuf("")
         setMode("break")
       } else if (key.backspace || key.delete) {
-        setTaskBuf(b => b.slice(0, -1))
+        setTaskBuf((b: string) => b.slice(0, -1))
       } else if (input.length === 1) {
-        setTaskBuf(b => b + input)
+        setTaskBuf((b: string) => b + input)
       }
     } else if (mode === "break") {
       if (key.return) {
@@ -117,9 +115,9 @@ function PomApp({ initialMinutes, initialTask }: PomAppProps) {
       } else if (key.escape || (key.ctrl && input === "c")) {
         exit()
       } else if (key.backspace || key.delete) {
-        setInputBuf(b => b.slice(0, -1))
+        setInputBuf((b: string) => b.slice(0, -1))
       } else if (input >= "0" && input <= "9") {
-        setInputBuf(b => b + input)
+        setInputBuf((b: string) => b + input)
       }
     }
   })
@@ -129,11 +127,11 @@ function PomApp({ initialMinutes, initialTask }: PomAppProps) {
   if (mode === "editTask") {
     content = (
       <Box flexDirection="column">
-        <Text color="yellow" bold>Edit task:</Text>
+        <Text color="yellow" bold>edit task</Text>
         <Text> </Text>
-        <Text><Text color="cyan">{taskBuf}</Text><Text color="gray">_</Text></Text>
+        <Text>{taskBuf}<Text color="gray">_</Text></Text>
         <Text> </Text>
-        <Text dimColor italic>enter to save, esc to cancel</Text>
+        <Text color="gray">enter · save    esc · cancel</Text>
       </Box>
     )
   } else if (mode === "break") {
@@ -141,14 +139,14 @@ function PomApp({ initialMinutes, initialTask }: PomAppProps) {
     const nextMinutes = inputBuf || String(minutes)
     content = (
       <Box flexDirection="column">
-        <Text color="green" bold>Break time!</Text>
+        <Text color="green" bold>break</Text>
         <Text> </Text>
-        <Text><Text color="gray">break  </Text><Text color="yellow" bold>{formatRemaining(breakElapsed)}</Text></Text>
-        {task ? <Text><Text color="gray">task   </Text><Text color="cyan">{task}</Text></Text> : null}
+        <Text><Text color="gray">elapsed </Text><Text bold>{formatRemaining(breakElapsed)}</Text></Text>
+        {task ? <Text><Text color="gray">task    </Text>{task}</Text> : null}
         <Text> </Text>
-        <Text><Text dimColor>enter</Text><Text color="gray"> start </Text><Text color="green" bold>{nextMinutes}m</Text><Text color="gray"> pom</Text></Text>
-        {inputBuf ? <Text dimColor>type numbers to change duration</Text> : null}
-        <Text><Text dimColor>t</Text><Text color="gray"> edit task  </Text><Text dimColor>esc</Text><Text color="gray"> quit</Text></Text>
+        <Text><Text color="gray">enter · </Text>start <Text color="green" bold>{nextMinutes}m</Text> pom</Text>
+        {inputBuf ? <Text color="gray">type numbers to change duration</Text> : null}
+        <Text color="gray">t · edit task    esc · quit</Text>
       </Box>
     )
   } else {
@@ -163,23 +161,23 @@ function PomApp({ initialMinutes, initialTask }: PomAppProps) {
 
     content = (
       <Box flexDirection="column">
-        <Text><Text color="gray">{formatTime(pomStartTime)}</Text><Text color="gray"> → </Text><Text color="green">{formatTime(endTime)}</Text></Text>
+        <Text>{formatTime(pomStartTime)} → {formatTime(endTime)}</Text>
         <Text> </Text>
-        <Text color="cyan" bold>{formatRemaining(remaining)}</Text>
+        <Text color="blue" bold>{formatRemaining(remaining)}</Text>
         <Text> </Text>
-        <GradientBar percent={percent} width={barWidth} />
-        {task ? <><Text> </Text><Text color="gray">{task}</Text></> : null}
+        <ProgressBar percent={percent} width={barWidth} />
+        {task ? <><Text> </Text><Text>{task}</Text></> : null}
         <Text> </Text>
-        <Text><Text dimColor>e</Text><Text color="gray"> end early  </Text><Text dimColor>ctrl+c</Text><Text color="gray"> quit</Text></Text>
+        <Text color="gray">e · end early    ctrl+c · quit</Text>
       </Box>
     )
   }
 
   return (
     <Box flexDirection="column">
-      <Text><Text color="#ff87ff" bold>pom</Text>{task ? <Text color="gray">  {task}</Text> : null}</Text>
+      <Text><Text bold>pom</Text>{task ? <Text color="gray">  {task}</Text> : null}</Text>
       <Text> </Text>
-      <Box borderStyle="round" borderColor="cyan" paddingX={3} paddingY={1}>
+      <Box borderStyle="round" borderColor="blue" paddingX={3} paddingY={1}>
         {content}
       </Box>
     </Box>

@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "fs"
 import { join } from "path"
-import { run, runArgs, runArgsAsync, errorMsg } from "../lib/git"
+import { run, runArgsAsync, errorMsg } from "../lib/git"
 
 export function findRepos(sourceDir: string): string[] {
   let entries: string[]
@@ -39,42 +39,6 @@ export function findTopLevelDirs(repoPath: string): string[] {
     } catch {}
   }
   return dirs.sort()
-}
-
-export function getDefaultBranch(repoPath: string): string {
-  const ref = run("symbolic-ref refs/remotes/origin/HEAD", repoPath)
-  if (ref) return ref.replace("refs/remotes/origin/", "")
-  return "main"
-}
-
-export function prepareRepo(repoPath: string, pull: boolean): { ok: boolean; msg: string } {
-  const defaultBranch = getDefaultBranch(repoPath)
-  let current: string
-  try {
-    current = runArgs(["rev-parse", "--abbrev-ref", "HEAD"], repoPath)
-  } catch {
-    return { ok: false, msg: "not a git repo" }
-  }
-  if (current !== defaultBranch) {
-    return { ok: false, msg: `on branch '${current}', expected '${defaultBranch}'` }
-  }
-  let status: string
-  try {
-    status = runArgs(["status", "--porcelain"], repoPath)
-  } catch {
-    return { ok: false, msg: "git status failed" }
-  }
-  if (status) {
-    return { ok: false, msg: "has uncommitted changes" }
-  }
-  if (pull) {
-    try {
-      runArgs(["pull", "--rebase"], repoPath)
-    } catch (err) {
-      return { ok: false, msg: "pull failed: " + errorMsg(err) }
-    }
-  }
-  return { ok: true, msg: "ready" }
 }
 
 export async function prepareRepoAsync(repoPath: string, pull: boolean): Promise<{ ok: boolean; msg: string }> {

@@ -1,9 +1,7 @@
 {
   "name": "tool",
   "private": true,
-  "scripts": {
-    "build": "bun build src/main.ts --compile --outfile $HOME/bin/tools/tool"
-  },
+  "scripts": {},
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "ink": "^6.0.0",

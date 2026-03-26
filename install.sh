@@ -34,6 +34,6 @@ mkdir -p "$HOME/bin/tools"
 cd "$DOTFILES/tools/tool"
 bun install
 cd /tmp
-bun build "$DOTFILES/tools/tool/src/main.ts" --compile --outfile "$HOME/bin/tools/tool"
+bun build "$DOTFILES/tools/tool/src/main.tsx" --compile --outfile "$HOME/bin/tools/tool"
 
 echo "dotfiles installed"

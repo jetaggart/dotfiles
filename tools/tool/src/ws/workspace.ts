@@ -140,35 +140,6 @@ function symlinkIgnoredDirs(srcRoot: string, dstRoot: string) {
   walk(srcRoot)
 }
 
-export function createWorktree(repoPath: string, dest: string, branch: string) {
-  try {
-    runArgs(["worktree", "add", dest, "-b", branch], repoPath)
-  } catch {
-    runArgs(["worktree", "add", dest, branch], repoPath)
-  }
-
-  const bootstrapDirs = ["node_modules", ".venv", "venv"]
-  const bootstrapFiles = [".env", ".env.local", ".env.development", ".env.development.local", ".env.test", ".env.test.local", ".env.production", ".env.production.local", "pyrightconfig.json"]
-
-  for (const dir of bootstrapDirs) {
-    const src = join(repoPath, dir)
-    const dst = join(dest, dir)
-    try { statSync(src) } catch { continue }
-    try { statSync(dst); continue } catch {}
-    Bun.spawnSync(["cp", "-a", src, dst])
-  }
-
-  for (const file of bootstrapFiles) {
-    const src = join(repoPath, file)
-    const dst = join(dest, file)
-    try { statSync(src) } catch { continue }
-    try { statSync(dst); continue } catch {}
-    try { copyFileSync(src, dst) } catch {}
-  }
-
-  symlinkIgnoredDirs(repoPath, dest)
-}
-
 export async function createWorktreeAsync(repoPath: string, dest: string, branch: string) {
   try {
     await runArgsAsync(["worktree", "add", dest, "-b", branch], repoPath)

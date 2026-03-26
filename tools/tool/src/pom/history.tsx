@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, appendFileSync } from "fs"
 import { join } from "path"
-import { bold, gray, cyan } from "../lib/styles"
+import { render, Box, Text } from "ink"
 
 const pomDir = join(process.env.HOME!, ".pom")
 const historyFile = join(pomDir, "history.csv")
@@ -37,42 +37,55 @@ function parseCSVLine(line: string): string[] {
   return fields
 }
 
-export function displayHistory(count: number) {
+type HistoryEntry = { date: string; duration: string; task: string }
+
+function loadEntries(count: number): HistoryEntry[] | null {
   let data: string
   try {
     data = readFileSync(historyFile, "utf-8").trim()
   } catch {
-    console.log("No history yet.")
-    return
+    return null
   }
-  if (!data) {
-    console.log("No history yet.")
-    return
-  }
+  if (!data) return null
 
   const lines = data.split("\n")
   const start = Math.max(0, lines.length - count)
+  const entries: HistoryEntry[] = []
 
-  let content = bold("DATE                 DURATION   TASK") + "\n\n"
   for (let i = lines.length - 1; i >= start; i--) {
     const fields = parseCSVLine(lines[i])
     if (fields.length < 3) continue
-    const date = fields[0]
     const secs = parseInt(fields[1], 10)
-    const task = fields[2]
     const mins = Math.floor(secs / 60)
     const s = secs % 60
-    const duration = s > 0 ? `${mins}m${s}s` : `${mins}m`
-    content += `${gray(date)}   ${cyan(duration.padEnd(8))}   ${task}\n`
+    entries.push({
+      date: fields[0],
+      duration: s > 0 ? `${mins}m${s}s` : `${mins}m`,
+      task: fields[2],
+    })
   }
+  return entries
+}
 
-  const boxBorder = "\u250c" + "\u2500".repeat(60) + "\u2510"
-  const boxBottom = "\u2514" + "\u2500".repeat(60) + "\u2518"
-  console.log()
-  console.log(cyan(boxBorder))
-  for (const line of content.trimEnd().split("\n")) {
-    console.log(cyan("\u2502") + " " + line)
+function HistoryView({ entries }: { entries: HistoryEntry[] }) {
+  return (
+    <Box flexDirection="column" paddingY={1}>
+      <Text bold>  DATE                 DURATION   TASK</Text>
+      <Text> </Text>
+      {entries.map((e, i) => (
+        <Text key={i}>
+          {"  "}<Text color="gray">{e.date}</Text>{"   "}<Text color="blue">{e.duration.padEnd(8)}</Text>{"   "}{e.task}
+        </Text>
+      ))}
+    </Box>
+  )
+}
+
+export function displayHistory(count: number) {
+  const entries = loadEntries(count)
+  if (!entries) {
+    render(<Text>no history yet</Text>)
+    return
   }
-  console.log(cyan(boxBottom))
-  console.log()
+  render(<HistoryView entries={entries} />)
 }

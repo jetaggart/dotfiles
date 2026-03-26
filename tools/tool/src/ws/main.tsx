@@ -1,6 +1,6 @@
 import { resolve, join, basename } from "path"
+import { render, Box, Text } from "ink"
 import { run } from "../lib/git"
-import { cyan, gray, yellow, magenta, red, bold, pink } from "../lib/styles"
 import { findRepos } from "./repos"
 import { findWsDir, workspaceRepoDirs, applyRandomTitleBar } from "./workspace"
 import { runCreateApp, runAddApp, runRemoveApp, runDeleteApp } from "./app"
@@ -18,16 +18,24 @@ function presetNames(): string {
   return Object.keys(presets).sort().join(", ")
 }
 
-function printUsage() {
-  console.error(
-    bold(pink("ws")) + gray(" — workspace manager") + "\n\n" +
-    cyan("create") + gray("  ws create [--tmux] <preset>") + magenta(" · ") + gray("ws create [--tmux] <src> <dst>") + "\n" +
-    cyan("add") + gray("     ws add") + magenta(" · ") + gray("from inside a workspace") + "\n" +
-    cyan("remove") + gray("  ws remove") + magenta(" · ") + gray("from inside a workspace") + "\n" +
-    cyan("color") + gray("   ws color") + magenta(" · ") + gray("random title bar theme in .code-workspace") + "\n" +
-    cyan("delete") + gray("  ws delete <dir>") + "\n\n" +
-    gray("presets  ") + yellow(presetNames()),
+function Usage() {
+  return (
+    <Box flexDirection="column" paddingY={1}>
+      <Text><Text bold>ws</Text> <Text color="gray">workspace manager</Text></Text>
+      <Text> </Text>
+      <Text><Text color="blue">create</Text><Text color="gray">  ws create [--tmux] {"<"}preset{">"} · ws create [--tmux] {"<"}src{">"} {"<"}dst{">"}</Text></Text>
+      <Text><Text color="blue">add</Text><Text color="gray">     ws add · from inside a workspace</Text></Text>
+      <Text><Text color="blue">remove</Text><Text color="gray">  ws remove · from inside a workspace</Text></Text>
+      <Text><Text color="blue">color</Text><Text color="gray">   ws color · random title bar theme</Text></Text>
+      <Text><Text color="blue">delete</Text><Text color="gray">  ws delete {"<"}dir{">"}</Text></Text>
+      <Text> </Text>
+      <Text><Text color="gray">presets  </Text><Text color="yellow" bold>{presetNames()}</Text></Text>
+    </Box>
   )
+}
+
+function err(msg: string) {
+  render(<Text color="red">{msg}</Text>)
 }
 
 function parseCreateArgs(rest: string[]): { useTmux: boolean; pos: string[] } {
@@ -43,7 +51,7 @@ function parseCreateArgs(rest: string[]): { useTmux: boolean; pos: string[] } {
 function runCreate(source: string, workspaces: string, useTmux: boolean) {
   const repos = findRepos(source)
   if (repos.length === 0) {
-    console.log(red("no git repos found in " + source))
+    err("no git repos found in " + source)
     return
   }
   runCreateApp(source, workspaces, repos, useTmux)
@@ -52,7 +60,7 @@ function runCreate(source: string, workspaces: string, useTmux: boolean) {
 function runAdd(source: string, wsDir: string) {
   const repos = findRepos(source)
   if (repos.length === 0) {
-    console.log(red("no git repos found in " + source))
+    err("no git repos found in " + source)
     return
   }
   runAddApp(source, wsDir, repos)
@@ -61,7 +69,7 @@ function runAdd(source: string, wsDir: string) {
 function runRemove(source: string, wsDir: string) {
   const repos = workspaceRepoDirs(wsDir)
   if (repos.length === 0) {
-    console.log(red("no repos in workspace"))
+    err("no repos in workspace")
     return
   }
   const dirty: string[] = []
@@ -75,7 +83,7 @@ function runRemove(source: string, wsDir: string) {
 function runDelete(source: string, wsDir: string) {
   const repos = workspaceRepoDirs(wsDir)
   if (repos.length === 0) {
-    console.log(red("no repos in workspace"))
+    err("no repos in workspace")
     return
   }
   const dirty: string[] = []
@@ -91,7 +99,7 @@ function runDelete(source: string, wsDir: string) {
 
 export function wsMain(args: string[]) {
   if (args.length === 0) {
-    printUsage()
+    render(<Usage />)
     process.exit(1)
   }
 
@@ -110,15 +118,19 @@ export function wsMain(args: string[]) {
         runCreate(resolve(pos[0]), resolve(pos[1]), useTmux)
         return
       }
-      console.error("usage: ws create [--tmux] <preset> | ws create [--tmux] <source_dir> <target_dir>")
-      console.error("presets: " + presetNames())
+      render(
+        <Box flexDirection="column">
+          <Text>usage: ws create [--tmux] {"<"}preset{">"} | ws create [--tmux] {"<"}source_dir{">"} {"<"}target_dir{">"}</Text>
+          <Text color="gray">presets: {presetNames()}</Text>
+        </Box>,
+      )
       process.exit(1)
     }
 
     case "add": {
       const ws = findWsDir()
       if (!ws) {
-        console.error("not in a workspace directory (no .ws.json found)")
+        err("not in a workspace directory (no .ws.json found)")
         process.exit(1)
       }
       runAdd(ws.source, ws.wsDir)
@@ -128,7 +140,7 @@ export function wsMain(args: string[]) {
     case "remove": {
       const ws = findWsDir()
       if (!ws) {
-        console.error("not in a workspace directory (no .ws.json found)")
+        err("not in a workspace directory (no .ws.json found)")
         process.exit(1)
       }
       runRemove(ws.source, ws.wsDir)
@@ -138,7 +150,7 @@ export function wsMain(args: string[]) {
     case "color": {
       const ws = findWsDir()
       if (!ws) {
-        console.error("not in a workspace directory (no .ws.json found)")
+        err("not in a workspace directory (no .ws.json found)")
         process.exit(1)
       }
       applyRandomTitleBar(ws.wsDir)
@@ -147,7 +159,7 @@ export function wsMain(args: string[]) {
 
     case "delete": {
       if (rest.length !== 1) {
-        console.error("usage: ws delete <workspace_dir>")
+        err("usage: ws delete <workspace_dir>")
         process.exit(1)
       }
       const wsDir = resolve(rest[0])
@@ -155,7 +167,7 @@ export function wsMain(args: string[]) {
       try {
         cfg = JSON.parse(readFileSync(join(wsDir, ".ws.json"), "utf-8"))
       } catch {
-        console.error(`not a workspace directory (no .ws.json in ${wsDir})`)
+        err(`not a workspace directory (no .ws.json in ${wsDir})`)
         process.exit(1)
       }
       runDelete(cfg!.source, wsDir)
@@ -163,7 +175,7 @@ export function wsMain(args: string[]) {
     }
 
     default:
-      printUsage()
+      render(<Usage />)
       process.exit(1)
   }
 }

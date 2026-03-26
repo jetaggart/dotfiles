@@ -1,3 +1,4 @@
+import { render, Text } from "ink"
 import { pomMain } from "./pom/main"
 import { queryMain } from "./query/main"
 import { wsMain } from "./ws/main"
@@ -15,6 +16,6 @@ switch (cmd) {
     wsMain(args)
     break
   default:
-    console.log("usage: tool <pom|q|ws> [args...]")
+    render(<Text color="gray">usage: tool {"<"}pom|q|ws{">"} [args...]</Text>)
     process.exit(1)
 }

@@ -32,15 +32,15 @@ type AsyncStatus = { phase: string; detail: string }
 
 function ResultLine({ result }: { result: WtreeResult }) {
   if (result.ok) {
-    return <Text><Text color="green">✓ </Text>{result.repo}<Text color="magenta"> → </Text><Text color="gray">{result.msg}</Text></Text>
+    return <Text><Text color="green" bold>✓</Text> {result.repo} <Text color="gray">{result.msg}</Text></Text>
   }
-  return <Text><Text color="red">✗ </Text>{result.repo}<Text color="magenta"> → </Text><Text color="red">{result.msg}</Text></Text>
+  return <Text><Text color="red">✗</Text> {result.repo} <Text color="red">{result.msg}</Text></Text>
 }
 
 function Banner({ action, subtitle }: { action: string; subtitle: string }) {
   return (
     <Text>
-      <Text color="#ff87ff" bold>ws</Text> <Text color="cyan">{action}</Text>
+      <Text bold>ws</Text> <Text color="blue">{action}</Text>
       {subtitle ? <Text color="gray">  {subtitle}</Text> : null}
     </Text>
   )
@@ -52,7 +52,7 @@ function History({ items }: { items: string[] }) {
 }
 
 function Summary({ lines, onExit }: { lines: ReactNode[]; onExit: () => void }) {
-  useInput((_input, key) => {
+  useInput((_input: string, key: { return: boolean }) => {
     if (key.return) onExit()
   })
   return (
@@ -73,7 +73,7 @@ function AsyncPanel({ title, status }: { title: string; status: AsyncStatus }) {
         <Text bold>{title}</Text>
       </Box>
       <Text> </Text>
-      <Text><Text color="magenta">now </Text><Text color="cyan">{status.phase}</Text></Text>
+      <Text><Text color="gray">now </Text><Text color="blue">{status.phase}</Text></Text>
       <Text color="gray">{status.detail}</Text>
     </Box>
   )
@@ -117,7 +117,7 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
     }
   }, [exitSummary])
 
-  const addHistory = (item: string) => setHistory(h => [...h, item])
+  const addHistory = (item: string) => setHistory((h: string[]) => [...h, item])
 
   const startChecking = (sel: string[], pull: boolean) => {
     setStep("checking")
@@ -125,7 +125,7 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
     const n = sel.length
     ;(async () => {
       for (let i = 0; i < n; i++) {
-        setAsyncStatus({ phase: "verify repository", detail: `[${i + 1}/${n}]  ${sel[i]}  ·  default branch · clean tree` })
+        setAsyncStatus({ phase: "verify repository", detail: `[${i + 1}/${n}]  ${sel[i]}` })
         const result = await prepareRepoAsync(join(source, sel[i]), pull)
         if (!result.ok) issues.push(`${sel[i]}: ${result.msg}`)
       }
@@ -170,17 +170,17 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
       setAsyncStatus({ phase: "layout", detail: "mkdir  " + wsDir })
       mkdirSync(wsDir, { recursive: true })
 
-      setAsyncStatus({ phase: "config", detail: "write  .ws.json  ·  source → " + source })
+      setAsyncStatus({ phase: "config", detail: ".ws.json  ·  source → " + source })
       writeWsConfig(wsDir, source)
 
       const claudeMd = join(source, "CLAUDE.md")
       try {
         statSync(claudeMd)
-        setAsyncStatus({ phase: "symlinks", detail: "CLAUDE.md  →  " + join(wsDir, "CLAUDE.md") })
+        setAsyncStatus({ phase: "symlinks", detail: "CLAUDE.md" })
         symlinkSync(claudeMd, join(wsDir, "CLAUDE.md"))
       } catch {}
 
-      setAsyncStatus({ phase: "symlinks", detail: ".me / .claude  (when present in source)" })
+      setAsyncStatus({ phase: "symlinks", detail: ".me / .claude" })
       for (const dir of SYMLINK_DIRS) {
         const src = join(source, dir)
         const dst = join(wsDir, dir)
@@ -192,30 +192,30 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
       const n = sel.length
       for (let i = 0; i < n; i++) {
         const repo = sel[i]
-        setAsyncStatus({ phase: "git worktrees", detail: `[${i + 1}/${n}]  worktree add  ·  ${repo}` })
+        setAsyncStatus({ phase: "git worktrees", detail: `[${i + 1}/${n}]  ${repo}` })
         try {
           await createWorktreeAsync(join(source, repo), join(wsDir, repo), name)
-          buildResults.push({ repo, ok: true, msg: "focus: " + focusLabel(fm[repo]) })
+          buildResults.push({ repo, ok: true, msg: focusLabel(fm[repo]) })
         } catch (err) {
           buildResults.push({ repo, ok: false, msg: err instanceof Error ? err.message : String(err) })
         }
       }
 
-      setAsyncStatus({ phase: "focus & workspace file", detail: "CLAUDE.local.md  ·  " + basename(wsDir) + ".code-workspace" })
+      setAsyncStatus({ phase: "config", detail: "CLAUDE.local.md  ·  .code-workspace" })
       writeFocusConfig(wsDir, fm)
 
       const lines: ReactNode[] = [
         <Text bold>workspace ready</Text>,
-        <Text color="cyan">{wsDir}</Text>,
+        <Text color="blue">{wsDir}</Text>,
         <Text> </Text>,
         ...buildResults.map(r => <ResultLine key={r.repo} result={r} />),
       ]
 
       if (useTmux && process.env.TMUX) {
         Bun.spawnSync(["tmux", "new-window", "-c", wsDir, "-n", name])
-        lines.push(<Text> </Text>, <Text><Text color="green">tmux </Text><Text color="gray">new window </Text><Text color="cyan">{name}</Text></Text>)
+        lines.push(<Text> </Text>, <Text><Text color="green" bold>tmux</Text> <Text color="gray">new window</Text> {name}</Text>)
       } else {
-        lines.push(<Text> </Text>, <Text><Text color="gray">cd </Text><Text color="cyan">{wsDir}</Text></Text>)
+        lines.push(<Text> </Text>, <Text color="gray">cd {wsDir}</Text>)
       }
 
       setSummaryLines(lines)
@@ -230,7 +230,7 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
         <History items={history} />
         <MultiSelect
           options={repos.map(r => ({ label: r, value: r }))}
-          onSubmit={(values) => {
+          onSubmit={(values: string[]) => {
             const sel = values.sort()
             setSelected(sel)
             addHistory("repos: " + sel.join(", "))
@@ -288,9 +288,9 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
         <Banner action="create workspace" subtitle={workspaces} />
         <History items={history} />
         <Box>
-          <Text>Workspace name: </Text>
+          <Text>workspace name: </Text>
           <TextInput
-            onSubmit={(value) => {
+            onSubmit={(value: string) => {
               const name = value.trim()
               if (!name) return
               setWsName(name)
@@ -311,11 +311,11 @@ function CreateApp({ source, workspaces, repos, useTmux }: CreateAppProps) {
       <Box flexDirection="column">
         <Banner action="create workspace" subtitle={workspaces} />
         <History items={history} />
-        <Text>{repo + ": focus directories"}</Text>
+        <Text>{repo}: focus directories</Text>
         <MultiSelect
           options={options}
-          onSubmit={(values) => {
-            const vals = values.map(v => v === "everything" ? "*" : v)
+          onSubmit={(values: string[]) => {
+            const vals = values.map((v: string) => v === "everything" ? "*" : v)
             const newFocus = { ...focus, [repo]: vals.includes("*") ? ["*"] : vals }
             setFocus(newFocus)
             addHistory(`${repo}: ${focusLabel(newFocus[repo])}`)
@@ -376,7 +376,7 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
     }
   }, [exitSummary])
 
-  const addHistory = (item: string) => setHistory(h => [...h, item])
+  const addHistory = (item: string) => setHistory((h: string[]) => [...h, item])
   const wsBranch = basename(wsDir)
 
   const startChecking = (sel: string[], pull: boolean) => {
@@ -425,7 +425,7 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
       const buildResults: WtreeResult[] = []
       for (let i = 0; i < sel.length; i++) {
         const repo = sel[i]
-        setAsyncStatus({ phase: "git worktree", detail: `[${i + 1}/${sel.length}]  add  ·  branch ${wsBranch}  ·  ${repo}` })
+        setAsyncStatus({ phase: "git worktree", detail: `[${i + 1}/${sel.length}]  ${repo}  ·  branch ${wsBranch}` })
         const dest = join(wsDir, repo)
         let reused = false
         try {
@@ -438,12 +438,12 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
             continue
           }
         }
-        let msg = "focus: " + focusLabel(fm[repo])
-        if (reused) msg = "worktree already present, " + msg
+        let msg = focusLabel(fm[repo])
+        if (reused) msg = "already present, " + msg
         buildResults.push({ repo, ok: true, msg })
       }
 
-      setAsyncStatus({ phase: "focus & workspace file", detail: "merge CLAUDE.local.md  ·  " + basename(wsDir) + ".code-workspace" })
+      setAsyncStatus({ phase: "config", detail: "CLAUDE.local.md  ·  .code-workspace" })
       const merged = readFocusDirs(wsDir)
       for (const r of buildResults) {
         if (!r.ok) continue
@@ -453,11 +453,11 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
 
       const lines: ReactNode[] = [
         <Text bold>added to workspace</Text>,
-        <Text color="cyan">{wsDir}</Text>,
+        <Text color="blue">{wsDir}</Text>,
         <Text> </Text>,
         ...buildResults.map(r => <ResultLine key={r.repo} result={r} />),
         <Text> </Text>,
-        <Text><Text color="gray">cd </Text><Text color="cyan">{wsDir}</Text></Text>,
+        <Text color="gray">cd {wsDir}</Text>,
       ]
       setSummaryLines(lines)
       setStep("summary")
@@ -471,7 +471,7 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
         <History items={history} />
         <MultiSelect
           options={repos.map(r => ({ label: r, value: r }))}
-          onSubmit={(values) => {
+          onSubmit={(values: string[]) => {
             const sel = values.sort()
             setSelected(sel)
             addHistory("repos: " + sel.join(", "))
@@ -525,11 +525,11 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
       <Box flexDirection="column">
         <Banner action="add repositories" subtitle={wsDir} />
         <History items={history} />
-        <Text>{repo + ": focus directories"}</Text>
+        <Text>{repo}: focus directories</Text>
         <MultiSelect
           options={options}
-          onSubmit={(values) => {
-            const vals = values.map(v => v === "everything" ? "*" : v)
+          onSubmit={(values: string[]) => {
+            const vals = values.map((v: string) => v === "everything" ? "*" : v)
             const newFocus = { ...focus, [repo]: vals.includes("*") ? ["*"] : vals }
             setFocus(newFocus)
             addHistory(`${repo}: ${focusLabel(newFocus[repo])}`)
@@ -583,7 +583,7 @@ function RemoveApp({ source, wsDir, repos, dirty }: RemoveAppProps) {
       <Box flexDirection="column">
         <Banner action="remove repository" subtitle={wsDir} />
         <History items={history} />
-        <Select options={options} onChange={(value) => { setTarget(value); setStep("confirm") }} />
+        <Select options={options} onChange={(value: string) => { setTarget(value); setStep("confirm") }} />
       </Box>
     )
   }
@@ -593,7 +593,7 @@ function RemoveApp({ source, wsDir, repos, dirty }: RemoveAppProps) {
       <Box flexDirection="column">
         <Banner action="remove repository" subtitle={wsDir} />
         <History items={history} />
-        <Text>Remove {target} from workspace?</Text>
+        <Text>remove {target} from workspace?</Text>
         <ConfirmInput
           defaultChoice="cancel"
           onConfirm={() => {
@@ -607,15 +607,15 @@ function RemoveApp({ source, wsDir, repos, dirty }: RemoveAppProps) {
                 writeFocusConfig(wsDir, fm)
                 setSummaryLines([
                   <Text bold>removed</Text>,
-                  <Text color="green">{target}</Text>,
+                  <Text color="green" bold>{target}</Text>,
                   <Text> </Text>,
-                  <Text><Text color="gray">cd </Text><Text color="cyan">{wsDir}</Text></Text>,
+                  <Text color="gray">cd {wsDir}</Text>,
                 ])
               } catch (err) {
                 setSummaryLines([
                   <Text color="red">{err instanceof Error ? err.message : String(err)}</Text>,
                   <Text> </Text>,
-                  <Text><Text color="gray">cd </Text><Text color="cyan">{wsDir}</Text></Text>,
+                  <Text color="gray">cd {wsDir}</Text>,
                 ])
               }
               setStep("summary")
@@ -673,12 +673,13 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
       const results: WtreeResult[] = []
       const failedRepos: string[] = []
       for (const repo of repos) {
-        setAsyncStatus({ phase: "git worktree remove --force", detail: repo })
+        setAsyncStatus({ phase: "git worktree remove", detail: repo })
         const parentRepo = join(source, repo)
         try {
           statSync(join(parentRepo, ".git"))
-          const result = Bun.spawnSync(["git", "worktree", "remove", join(wsDir, repo), "--force"], { cwd: parentRepo })
-          if (result.exitCode !== 0) {
+          const proc = Bun.spawn(["git", "worktree", "remove", join(wsDir, repo), "--force"], { cwd: parentRepo, stderr: "pipe", stdout: "pipe" })
+          const exitCode = await proc.exited
+          if (exitCode !== 0) {
             failedRepos.push(repo)
           } else {
             results.push({ repo, ok: true, msg: "removed" })
@@ -716,7 +717,8 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
         const parentRepo = join(source, repo)
         try {
           statSync(join(parentRepo, ".git"))
-          Bun.spawnSync(["git", "worktree", "prune"], { cwd: parentRepo })
+          const proc = Bun.spawn(["git", "worktree", "prune"], { cwd: parentRepo, stderr: "pipe", stdout: "pipe" })
+          await proc.exited
         } catch {}
         newResults.push({ repo, ok: true, msg: "force removed" })
       }
@@ -739,7 +741,7 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
     return (
       <Box flexDirection="column">
         <Banner action="delete workspace" subtitle={basename(wsDir)} />
-        {dirty.length > 0 && <Text color="yellow">uncommitted changes in: {dirty.join(", ")}</Text>}
+        {dirty.length > 0 && <Text color="yellow" bold>uncommitted changes in: {dirty.join(", ")}</Text>}
         <Text>{confirmMsg}</Text>
         <ConfirmInput
           defaultChoice="cancel"
@@ -763,7 +765,7 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
     return (
       <Box flexDirection="column">
         <Banner action="delete workspace" subtitle={basename(wsDir)} />
-        {forceLines.map((l, i) => <Text key={i} color="yellow">{l}</Text>)}
+        {forceLines.map((l: string, i: number) => <Text key={i} color="yellow" bold>{l}</Text>)}
         <Text> </Text>
         <Text>force remove these directories?</Text>
         <ConfirmInput
@@ -773,7 +775,7 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
             const lines: ReactNode[] = [
               <Text color="red">aborted — workspace partially deleted</Text>,
               ...delResults.map(r => <ResultLine key={r.repo} result={r} />),
-              ...failed.map(repo => <Text key={repo}><Text color="yellow">! </Text>{repo}<Text color="gray"> · skipped</Text></Text>),
+              ...failed.map(repo => <Text key={repo}><Text color="yellow" bold>!</Text> {repo} <Text color="gray">skipped</Text></Text>),
             ]
             setSummaryLines(lines)
             setStep("summary")

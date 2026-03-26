@@ -45,7 +45,10 @@
       "Bash(/tmp/tool-test4 q:*)",
       "Bash(/tmp/tool-test5 pom:*)",
       "Bash(/tmp/tool-test5 ws:*)",
-      "Bash(/tmp/tool-test5 q:*)"
+      "Bash(/tmp/tool-test5 q:*)",
+      "Bash(~/bin/tools/tool ws:*)",
+      "Bash(~/bin/tools/tool q:*)",
+      "Bash(~/bin/tools/tool)"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce",
