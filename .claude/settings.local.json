@@ -48,7 +48,8 @@
       "Bash(/tmp/tool-test5 q:*)",
       "Bash(~/bin/tools/tool ws:*)",
       "Bash(~/bin/tools/tool q:*)",
-      "Bash(~/bin/tools/tool)"
+      "Bash(~/bin/tools/tool)",
+      "Read(//Users/jetaggart/code/dotfiles/**)"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce",

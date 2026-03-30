@@ -430,11 +430,11 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
         let reused = false
         try {
           await createWorktreeAsync(join(source, repo), dest, wsBranch)
-        } catch {
+        } catch (err) {
           if (isExistingWorkspaceWorktree(join(source, repo), dest, wsBranch)) {
             reused = true
           } else {
-            buildResults.push({ repo, ok: false, msg: "worktree add failed" })
+            buildResults.push({ repo, ok: false, msg: err instanceof Error ? err.message : "worktree add failed" })
             continue
           }
         }
@@ -447,7 +447,13 @@ function AddApp({ source, wsDir, repos }: AddAppProps) {
       const merged = readFocusDirs(wsDir)
       for (const r of buildResults) {
         if (!r.ok) continue
-        merged[r.repo] = fm[r.repo]
+        const existing = merged[r.repo] ?? []
+        const incoming = fm[r.repo]
+        if (existing.includes("*") || incoming.includes("*")) {
+          merged[r.repo] = ["*"]
+        } else {
+          merged[r.repo] = [...new Set([...existing, ...incoming])]
+        }
       }
       writeFocusConfig(wsDir, merged)
 

@@ -102,7 +102,7 @@
   "window.density.editorTabHeight": "compact",
   "workbench.editor.pinnedTabSizing": "compact",
   "editor.lineHeight": 1.25,
-  "git.blame.editorDecoration.enabled": false,
+  "git.blame.editorDecoration.enabled": true,
   "claudeCode.preferredLocation": "panel",
   "claudeCode.selectedModel": "default",
   "dotnetAcquisitionExtension.enableTelemetry": false,

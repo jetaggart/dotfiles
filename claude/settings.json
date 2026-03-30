@@ -6,10 +6,6 @@
     "ENABLE_LSP_TOOL": "1"
   },
   "permissions": {
-    "deny": [
-      "Bash(git push*)",
-      "Bash(git pull*)"
-    ],
     "allow": [
       "Read",
       "Glob",
@@ -152,6 +148,10 @@
       "Bash(git -C /Users/jetaggart/code/lettuce/workspaces/benefits-discount/frontends commit -m \"remove terms & conditions links from discount banners\")",
       "Bash(git -C /Users/jetaggart/code/lettuce/workspaces/benefits-discount/frontends diff main...HEAD --stat)",
       "Bash(git -C /Users/jetaggart/code/lettuce/workspaces/benefits-discount/frontends log main..HEAD --oneline)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git pull*)"
     ]
   },
   "statusLine": {
