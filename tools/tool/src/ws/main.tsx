@@ -1,6 +1,6 @@
 import { resolve, join, basename } from "path"
 import { render, Box, Text } from "ink"
-import { run } from "../lib/git"
+import { run, runArgs } from "../lib/git"
 import { findRepos } from "./repos"
 import { findWsDir, workspaceRepoDirs, applyRandomTitleBar } from "./workspace"
 import { runCreateApp, runAddApp, runRemoveApp, runDeleteApp } from "./app"
@@ -11,6 +11,10 @@ const presets: Record<string, { source: string; target: string }> = {
   lettuce: {
     source: join(home, "code", "lettuce"),
     target: join(home, "code", "lettuce", "workspaces"),
+  },
+  wintermuse: {
+    source: join(home, "code", "wintermuse"),
+    target: join(home, "code", "wintermuse", "workspaces"),
   },
 }
 
@@ -80,6 +84,14 @@ function runRemove(source: string, wsDir: string) {
   runRemoveApp(source, wsDir, repos, dirty)
 }
 
+function hasUnpushedCommits(cwd: string): boolean {
+  try {
+    return !!runArgs(["log", "@{u}..HEAD", "--oneline"], cwd)
+  } catch {
+    return true
+  }
+}
+
 function runDelete(source: string, wsDir: string) {
   const repos = workspaceRepoDirs(wsDir)
   if (repos.length === 0) {
@@ -87,14 +99,17 @@ function runDelete(source: string, wsDir: string) {
     return
   }
   const dirty: string[] = []
+  const unpushed: string[] = []
   for (const repo of repos) {
-    if (run("status --porcelain", join(wsDir, repo))) dirty.push(repo)
+    const repoDir = join(wsDir, repo)
+    if (run("status --porcelain", repoDir)) dirty.push(repo)
+    if (hasUnpushedCommits(repoDir)) unpushed.push(repo)
   }
   let msg = `delete workspace ${basename(wsDir)}? (${repos.join(", ")})`
-  if (dirty.length > 0) {
-    msg = "uncommitted changes in: " + dirty.join(", ") + ". delete anyway?"
+  if (dirty.length > 0 || unpushed.length > 0) {
+    msg = "delete anyway?"
   }
-  runDeleteApp(source, wsDir, repos, dirty, msg)
+  runDeleteApp(source, wsDir, repos, dirty, unpushed, msg)
 }
 
 export function wsMain(args: string[]) {

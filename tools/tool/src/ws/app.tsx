@@ -661,10 +661,11 @@ interface DeleteAppProps {
   wsDir: string
   repos: string[]
   dirty: string[]
+  unpushed: string[]
   confirmMsg: string
 }
 
-function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) {
+function DeleteApp({ source, wsDir, repos, dirty, unpushed, confirmMsg }: DeleteAppProps) {
   const { exit } = useApp()
   const [step, setStep] = useState<"confirm" | "working" | "forceConfirm" | "forceWorking" | "summary">("confirm")
   const [asyncStatus, setAsyncStatus] = useState<AsyncStatus>({ phase: "…", detail: "starting" })
@@ -748,6 +749,7 @@ function DeleteApp({ source, wsDir, repos, dirty, confirmMsg }: DeleteAppProps) 
       <Box flexDirection="column">
         <Banner action="delete workspace" subtitle={basename(wsDir)} />
         {dirty.length > 0 && <Text color="yellow" bold>uncommitted changes in: {dirty.join(", ")}</Text>}
+        {unpushed.length > 0 && <Text color="yellow" bold>unpushed commits in: {unpushed.join(", ")}</Text>}
         <Text>{confirmMsg}</Text>
         <ConfirmInput
           defaultChoice="cancel"
@@ -815,6 +817,6 @@ export function runRemoveApp(source: string, wsDir: string, repos: string[], dir
   render(<RemoveApp source={source} wsDir={wsDir} repos={repos} dirty={dirty} />)
 }
 
-export function runDeleteApp(source: string, wsDir: string, repos: string[], dirty: string[], confirmMsg: string) {
-  render(<DeleteApp source={source} wsDir={wsDir} repos={repos} dirty={dirty} confirmMsg={confirmMsg} />)
+export function runDeleteApp(source: string, wsDir: string, repos: string[], dirty: string[], unpushed: string[], confirmMsg: string) {
+  render(<DeleteApp source={source} wsDir={wsDir} repos={repos} dirty={dirty} unpushed={unpushed} confirmMsg={confirmMsg} />)
 }

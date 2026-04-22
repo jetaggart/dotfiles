@@ -42,6 +42,7 @@ git:
     showGraph: always
   truncateCopiedCommitHashesTo: 12
 os:
+  editPreset: "nvim-remote"
   copyToClipboardCmd: pbcopy
   open: open {{filename}}
   openLink: open {{link}}

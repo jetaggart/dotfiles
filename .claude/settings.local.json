@@ -49,7 +49,8 @@
       "Bash(~/bin/tools/tool ws:*)",
       "Bash(~/bin/tools/tool q:*)",
       "Bash(~/bin/tools/tool)",
-      "Read(//Users/jetaggart/code/dotfiles/**)"
+      "Read(//Users/jetaggart/code/dotfiles/**)",
+      "Bash(PATH=/opt/homebrew/bin:$PATH rg -n \"venv\\\\|pyproject\\\\|requirements\" /Users/jetaggart/code/dotfiles/tools/tool/src/ws/)"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce",

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, symlinkSync, lstatSync, rmSync, copyFileSync } from "fs"
+import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, symlinkSync, lstatSync, rmSync, copyFileSync, existsSync } from "fs"
 import { join, basename, dirname, relative, resolve } from "path"
 import { runArgs, runArgsAsync } from "../lib/git"
 import { randomTheme } from "./themes"
@@ -87,19 +87,26 @@ export function writeFocusConfig(wsDir: string, focus: FocusMap) {
 
   const theme = randomTheme()
   const wsName = basename(wsDir)
-  const wsData = {
-    folders,
-    settings: {
-      "window.title": `${wsName} — \${rootName}\${separator}\${appName}`,
-      "files.exclude": { "**/.git": true, ".ws.json": true },
-      "workbench.colorCustomizations": {
-        "titleBar.activeBackground": theme.activeBG,
-        "titleBar.activeForeground": theme.activeFG,
-        "titleBar.inactiveBackground": theme.inactiveBG,
-        "titleBar.inactiveForeground": theme.inactiveFG,
-      },
+  const hasPython = allRepos.some(repo => {
+    const repoDir = join(wsDir, repo)
+    return existsSync(join(repoDir, ".venv")) || existsSync(join(repoDir, "pyproject.toml")) || existsSync(join(repoDir, "requirements.txt"))
+  })
+  const settings: Record<string, unknown> = {
+    "window.title": `${wsName} — \${rootName}\${separator}\${appName}`,
+    "files.exclude": { "**/.git": true, ".ws.json": true },
+    "workbench.colorCustomizations": {
+      "titleBar.activeBackground": theme.activeBG,
+      "titleBar.activeForeground": theme.activeFG,
+      "titleBar.inactiveBackground": theme.inactiveBG,
+      "titleBar.inactiveForeground": theme.inactiveFG,
     },
   }
+  if (hasPython) {
+    settings["python.defaultInterpreterPath"] = "${workspaceFolder}/.venv/bin/python"
+    settings["python.analysis.extraPaths"] = []
+    settings["python.analysis.autoSearchPaths"] = true
+  }
+  const wsData = { folders, settings }
   writeFileSync(join(wsDir, `${wsName}.code-workspace`), JSON.stringify(wsData, null, 2) + "\n")
 }
 

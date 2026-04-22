@@ -98,7 +98,7 @@ vim.g.have_nerd_font = false
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
-vim.diagnostic.enable(false)
+vim.diagnostic.enable(true)
 
 vim.o.autoread = true
 vim.o.swapfile = false
@@ -133,6 +133,7 @@ vim.o.showmode = false
 
 -- Enable break indent
 vim.o.breakindent = true
+vim.o.wrap = false
 
 -- Save undo history
 vim.o.undofile = true
@@ -212,6 +213,8 @@ vim.keymap.set({ 'n', 'i' }, '<D-S-z>', '<cmd>redo<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>td', function() vim.diagnostic.enable(not vim.diagnostic.is_enabled()) end, { desc = '[T]oggle [D]iagnostics' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror float' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which

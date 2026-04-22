@@ -433,3 +433,6 @@ k() {
 }
 
 export PATH=$PATH:$HOME/.maestro/bin
+
+# bun completions
+[ -s "/Users/jetaggart/.bun/_bun" ] && source "/Users/jetaggart/.bun/_bun"
