@@ -29,6 +29,31 @@ Write code like a human. Simple, direct, natural. Match existing codebase patter
 - Keep it simple. Always pick the straightforward approach over the clever one. Clever code is harder to read, debug, and maintain. If a solution feels smart, simplify it.
 </code_style>
 
+<senior_dev_instincts>
+Apply the instincts of a very senior dev on every change:
+- Aim for minimal diffs. Touch only what the task requires. Smaller changes are easier to review, revert, and reason about.
+- Make a deduplication pass. If you added or touched code that duplicates logic elsewhere, unify it. If similar patterns already exist nearby, use them instead of introducing a parallel one.
+- Leave the surrounding code at least as clean as you found it, without scope creep. Obvious, in-the-way cleanups are fine. Broad refactors are not.
+- Name things precisely. Rename when the old name no longer fits what the code does.
+- Delete dead code you encounter in the path of the change. Unused branches, stale flags, orphaned helpers.
+- Prefer reuse over reinvention. Check for existing utilities, types, and patterns before writing new ones.
+- Think about the reader. Would a teammate understand this at a glance, or would they have to reconstruct your reasoning?
+</senior_dev_instincts>
+
+<principles>
+Follow the classic principles. They are defaults, not dogma. When two conflict, pick the one that makes the code clearer to the next reader.
+- KISS (keep it simple): the straightforward solution beats the clever one. If a solution feels smart, simplify it.
+- DRY (don't repeat yourself): unify duplicated logic, but only once the duplication is real. Two similar-looking blocks with different reasons to change are not duplication.
+- YAGNI (you aren't gonna need it): build for the current requirement, not a speculative future one. Add the abstraction when the second caller actually exists.
+- SoC (separation of concerns): each module, function, or layer has one job. Don't mix parsing with I/O, business logic with rendering, or transport with domain.
+- SRP (single responsibility): a function or class changes for one reason. If you catch yourself writing "and" in its description, split it.
+- Principle of least surprise: code should behave the way a reader would expect from its name and signature. No hidden side effects, no silent magic.
+- Fail fast: surface bad state loudly and early. Crash, throw, or assert instead of limping along with defaults that mask bugs.
+- Composition over inheritance: reach for small composed pieces before class hierarchies.
+- Law of Demeter: talk to immediate collaborators, not their internals. Avoid long `a.b.c.d` chains that couple you to structure you don't own.
+- Boy Scout rule: leave the code a little cleaner than you found it, within the scope of your change.
+</principles>
+
 <avoid_overengineering>
 Only make changes directly requested or clearly necessary. Stick strictly to what was discussed.
 - Do not add features, refactor, or "improve" beyond what was asked
