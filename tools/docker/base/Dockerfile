@@ -55,6 +55,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN chsh -s /usr/bin/zsh root
+
 RUN mkdir -p /run/sshd \
     && { \
       echo 'PermitRootLogin yes'; \

@@ -85,7 +85,7 @@ Project isolation via Docker on OrbStack. Each project lives in a named volume, 
 - shared `dev-creds` volume holds claude OAuth, ssh key, gitconfig. mounted read-only into project containers.
 - per-project compose file at `~/.config/dev/projects/<name>/compose.yaml`.
 - localhost networking: orbstack auto-publishes any container port to host `localhost:<port>`.
-- editor: vscode/cursor remote-containers attach to the running container; nvim works via `dev shell`.
+- editor: vscode remote-containers attaches to the running container; nvim works via `dev shell`.
 </dev_architecture>
 
 <dev_setup>
@@ -108,13 +108,12 @@ One-time setup: `dev init`
 | `dev shell <name>` | interactive zsh inside container |
 | `dev exec <name> -- <cmd>` | one-off command inside |
 | `dev claude <name>` | run claude inside container |
-| `dev code <name>` / `dev cursor <name>` | open in editor (remote-containers attached) |
+| `dev code <name>` | open in vscode (remote-containers attached) |
 | `dev nuke <name> --yes` | full wipe: container + source + cache volumes |
 | `dev rebuild <name>` | recreate container, keep volumes (regenerates compose.yaml) |
 | `dev backup/restore <name> <file>` | snapshot/restore source volume |
-| `dev init` | first-time bootstrap (build-image + auth) |
+| `dev init` | (re)build the dev-base image and run auth if creds volume missing |
 | `dev auth` | refresh creds volume |
-| `dev build-image` | rebuild dev-base |
 | `dev doctor` | health check |
 | `dev config [get/set]` | global config (baseImage, credsVolume) |
 

@@ -24,10 +24,6 @@ ln -sf "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"
 ln -sfn "$DOTFILES/claude/skills" "$HOME/.claude/skills"
 
-mkdir -p "$HOME/Library/Application Support/Cursor/User"
-ln -sf "$DOTFILES/cursor/settings.json" "$HOME/Library/Application Support/Cursor/User/settings.json"
-ln -sf "$DOTFILES/cursor/keybindings.json" "$HOME/Library/Application Support/Cursor/User/keybindings.json"
-
 rm -rf "$HOME/bin/tools"
 mkdir -p "$HOME/bin/tools"
 

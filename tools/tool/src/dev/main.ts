@@ -45,14 +45,12 @@ projects:
   exec <name> -- <cmd...>                    run command in container
   claude <name>                              run claude in container
   code <name>                                open in vscode (remote)
-  cursor <name>                              open in cursor (remote)
   nuke <name> [--yes]                        full wipe: container + volumes
   rebuild <name>                             recreate container, keep volumes
 
 setup:
-  init                                       bootstrap: build-image + auth
+  init                                       (re)build image + auth if needed
   auth [--from-scratch]                      refresh creds volume (reuses existing keys unless --from-scratch)
-  build-image                                build dev-base image
   doctor                                     check setup health
 
 backups:
@@ -260,7 +258,7 @@ async function cmdClaude(args: string[]): Promise<void> {
   process.exit(await sshInto(name, `cd /work && exec ${claudeCmd}`))
 }
 
-async function cmdCode(args: string[], editor: "code" | "cursor"): Promise<void> {
+async function cmdCode(args: string[]): Promise<void> {
   const name = resolveProject(args[0])
   if (!projectExists(name)) err(`project not found: ${name}`)
   const cn = containerName(name)
@@ -268,7 +266,7 @@ async function cmdCode(args: string[], editor: "code" | "cursor"): Promise<void>
     console.log(`starting ${name}`)
     await compose(projectComposeFile(name), ["up", "-d"])
   }
-  const code = await openInEditor(name, editor)
+  const code = await openInEditor(name)
   process.exit(code)
 }
 
@@ -318,19 +316,11 @@ function buildImageSync(): number {
   return proc.exitCode
 }
 
-function cmdBuildImage(): void {
-  process.exit(buildImageSync())
-}
-
 async function cmdInit(): Promise<void> {
   const cfg = readGlobalConfig()
   if (dockerSync(["info"]).code !== 0) err("docker is not running. start orbstack/docker desktop first.")
 
-  if (!imageExists(cfg.baseImage)) {
-    if (buildImageSync() !== 0) err(`base image build failed`)
-  } else {
-    console.log(`base image ${cfg.baseImage} already built`)
-  }
+  if (buildImageSync() !== 0) err(`base image build failed`)
 
   if (!volumeExists(cfg.credsVolume)) {
     await runAuth()
@@ -448,13 +438,11 @@ export async function devMain(args: string[]): Promise<void> {
     case "enter":       return cmdEnter(rest)
     case "exec":        return cmdExec(rest)
     case "claude":      return cmdClaude(rest)
-    case "code":        return cmdCode(rest, "code")
-    case "cursor":      return cmdCode(rest, "cursor")
+    case "code":        return cmdCode(rest)
     case "nuke":        return cmdNuke(rest)
     case "rebuild":     return cmdRebuild(rest)
     case "init":        return cmdInit()
     case "auth":        return cmdAuth(rest)
-    case "build-image": return cmdBuildImage()
     case "doctor":      return cmdDoctor()
     case "backup":      return cmdBackup(rest)
     case "restore":     return cmdRestore(rest)

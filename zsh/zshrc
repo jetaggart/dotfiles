@@ -11,7 +11,6 @@ plugins=(git)
 export EDITOR="$(command -v nvim 2>/dev/null || echo vim)"
 export NVM_DIR="$HOME/.nvm"
 export PNPM_HOME="$HOME/Library/pnpm"
-export PATH="$HOME/.cursor/extensions/bin:$PNPM_HOME:$PATH"
 export PATH="$HOME/bin/tools:$PNPM_HOME:$PATH"
 [ -d "$HOME/.bun/bin" ] && export PATH="$HOME/.bun/bin:$PATH"
 [ -d "$HOME/.npm-global/bin" ] && export PATH="$HOME/.npm-global/bin:$PATH"
@@ -80,7 +79,6 @@ alias vi=nvim
 alias vim=nvim
 alias ai=aichat
 alias lg=lazygit
-alias fix-dn='find "$HOME/.cursor/extensions" -type f -path "*/ms-dotnettools.csdevkit-*/dist/extension.js" -exec sed -i "" "s/checkHostApp=function(){return!!\[\"Visual Studio Code\"/checkHostApp=function(){return!!\[\"Cursor\",\"Visual Studio Code\"/" {} +'
 alias br='bun run'
 alias pom='tool pom'
 alias ws='tool ws'

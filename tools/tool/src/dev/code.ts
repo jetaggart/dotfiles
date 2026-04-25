@@ -8,16 +8,16 @@ function hexEncode(s: string): string {
     .join("")
 }
 
-export async function openInEditor(project: string, editor: "code" | "cursor"): Promise<number> {
+export async function openInEditor(project: string): Promise<number> {
   const cn = containerName(project)
   if (!containerRunning(cn)) {
-    throw new Error(`container ${cn} is not running. start it with: tool dev start ${project}`)
+    throw new Error(`container ${cn} is not running. start it with: dev start ${project}`)
   }
 
   const hex = hexEncode(cn)
   const folderUri = `vscode-remote://attached-container+${hex}/work`
 
-  const p = spawn([editor, "--folder-uri", folderUri], {
+  const p = spawn(["code", "--folder-uri", folderUri], {
     stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
