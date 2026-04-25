@@ -31,3 +31,12 @@ export function srcVolume(project: string): string {
 export function cacheVolume(project: string): string {
   return `${project}-cache`
 }
+
+export function projectSshPort(name: string): number {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i)
+    hash |= 0
+  }
+  return 22000 + (Math.abs(hash) % 1000)
+}

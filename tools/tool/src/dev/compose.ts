@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync, readdirSync, existsSync } from "fs"
 import { dirname, join } from "path"
-import { containerName, srcVolume, cacheVolume, projectComposeFile } from "./paths"
+import { containerName, srcVolume, cacheVolume, projectComposeFile, projectSshPort } from "./paths"
 import { readGlobalConfig } from "./config"
 import type { ProjectMeta } from "./projects"
 
@@ -44,15 +44,18 @@ export function composeYaml(meta: ProjectMeta): string {
     `    stdin_open: true`,
     `    tty: true`,
     `    working_dir: /work`,
+    `    network_mode: host`,
     `    volumes:`,
     `      - ${src}:/work`,
     `      - ${cache}:/root/.cache`,
     `      - ${creds}:/root/.dev-creds`,
+    `      - /var/run/docker.sock:/var/run/docker.sock`,
     ...sshKeyMounts,
     ...dotfilesBindMounts,
     `    environment:`,
     `      DEV_PROJECT: ${meta.name}`,
     `      DEV_CREDS_DIR: /root/.dev-creds`,
+    `      SSH_PORT: ${projectSshPort(meta.name)}`,
     `    labels:`,
     `      - "dev.tool.project=${meta.name}"`,
     meta.gitUrl ? `      - "dev.tool.git_url=${meta.gitUrl}"` : ``,

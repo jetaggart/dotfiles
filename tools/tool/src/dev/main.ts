@@ -6,6 +6,7 @@ import {
   containerName,
   srcVolume,
   cacheVolume,
+  projectSshPort,
 } from "./paths"
 import { readGlobalConfig, writeGlobalConfig } from "./config"
 import {
@@ -39,9 +40,8 @@ projects:
   list                                       list projects
   start <name>                               start container
   stop <name>                                stop container
-  shell <name>                               shell into container (docker exec)
-  enter <name>                               alias for shell
-  ssh <name>                                  ssh into container (debug, real pty)
+  shell <name>                               ssh into container (real pty, smooth TUI)
+  enter <name>                               docker exec into container (escape hatch)
   exec <name> -- <cmd...>                    run command in container
   claude <name>                              run claude in container
   code <name>                                open in vscode (remote)
@@ -203,35 +203,43 @@ async function cmdStop(args: string[]): Promise<void> {
   console.log(`${name} stopped`)
 }
 
-async function cmdShell(args: string[]): Promise<void> {
-  const name = resolveProject(args[0])
-  if (!projectExists(name)) err(`project not found: ${name}`)
+async function ensureRunning(name: string): Promise<string> {
   const cn = containerName(name)
   if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
-  const code = await dockerStream(["exec", "-it", cn, "zsh", "-l"])
-  process.exit(code)
+  return cn
 }
 
-async function cmdSsh(args: string[]): Promise<void> {
-  const name = resolveProject(args[0])
-  if (!projectExists(name)) err(`project not found: ${name}`)
-  const cn = containerName(name)
-  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
+function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'"
+}
 
-  const ipResult = dockerSync(["inspect", "--format", "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}", cn])
-  const ip = ipResult.stdout.trim().split(/\s+/).find(s => s.length > 0)
-  if (!ip) err(`could not resolve container ip for ${cn}`)
-
+async function sshInto(name: string, remoteCmd: string): Promise<number> {
+  await ensureRunning(name)
   const sshArgs = [
     "-o", "StrictHostKeyChecking=no",
     "-o", "UserKnownHostsFile=/dev/null",
     "-o", "LogLevel=ERROR",
+    "-p", String(projectSshPort(name)),
     "-t",
-    `root@${ip}`,
-    "zsh", "-l",
+    `root@localhost`,
+    remoteCmd,
   ]
   const p = Bun.spawn(["ssh", ...sshArgs], { stdin: "inherit", stdout: "inherit", stderr: "inherit" })
-  process.exit(await p.exited)
+  return await p.exited
+}
+
+async function cmdShell(args: string[]): Promise<void> {
+  const name = resolveProject(args[0])
+  if (!projectExists(name)) err(`project not found: ${name}`)
+  process.exit(await sshInto(name, "cd /work && exec zsh -l"))
+}
+
+async function cmdEnter(args: string[]): Promise<void> {
+  const name = resolveProject(args[0])
+  if (!projectExists(name)) err(`project not found: ${name}`)
+  const cn = await ensureRunning(name)
+  const code = await dockerStream(["exec", "-it", cn, "zsh", "-l"])
+  process.exit(code)
 }
 
 async function cmdExec(args: string[]): Promise<void> {
@@ -248,10 +256,8 @@ async function cmdExec(args: string[]): Promise<void> {
 async function cmdClaude(args: string[]): Promise<void> {
   const { name, rest } = takeProject(args)
   if (!projectExists(name)) err(`project not found: ${name}`)
-  const cn = containerName(name)
-  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
-  const code = await dockerStream(["exec", "-it", cn, "claude", ...rest])
-  process.exit(code)
+  const claudeCmd = ["claude", ...rest.map(shellEscape)].join(" ")
+  process.exit(await sshInto(name, `cd /work && exec ${claudeCmd}`))
 }
 
 async function cmdCode(args: string[], editor: "code" | "cursor"): Promise<void> {
@@ -438,8 +444,8 @@ export async function devMain(args: string[]): Promise<void> {
     case "start":       return cmdStart(rest)
     case "stop":        return cmdStop(rest)
     case "shell":       return cmdShell(rest)
-    case "enter":       return cmdShell(rest)
-    case "ssh":         return cmdSsh(rest)
+    case "ssh":         return cmdShell(rest)
+    case "enter":       return cmdEnter(rest)
     case "exec":        return cmdExec(rest)
     case "claude":      return cmdClaude(rest)
     case "code":        return cmdCode(rest, "code")

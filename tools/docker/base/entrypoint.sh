@@ -29,4 +29,6 @@ if [ -d /root/.ssh/host_authorized_keys.d ]; then
   chmod 600 /root/.ssh/authorized_keys
 fi
 
+echo "Port ${SSH_PORT:-22}" > /etc/ssh/sshd_config.d/99-port.conf
+
 exec /usr/sbin/sshd -D -e

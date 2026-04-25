@@ -7,13 +7,51 @@ ENV HOME=/root
 ENV TERM=xterm-256color
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl ca-certificates git build-essential \
-      unzip xz-utils tar \
-      tmux zsh \
-      ripgrep fd-find fzf jq \
-      openssh-client openssh-server gnupg locales \
+      bat \
+      bind9-host \
+      build-essential \
+      ca-certificates \
+      curl \
+      dnsutils \
+      docker.io \
+      docker-compose-v2 \
+      fd-find \
+      file \
+      fzf \
+      gh \
+      git \
+      git-lfs \
+      gnupg \
+      htop \
+      httpie \
+      iproute2 \
+      iputils-ping \
+      jq \
+      less \
+      locales \
+      lsof \
+      man-db \
+      mtr-tiny \
+      ncurses-bin \
+      ncurses-term \
+      netcat-openbsd \
+      openssh-client \
+      openssh-server \
+      postgresql-client \
+      psmisc \
+      redis-tools \
+      ripgrep \
       socat \
-      ncurses-bin ncurses-term \
+      tar \
+      tmux \
+      traceroute \
+      tree \
+      unzip \
+      wget \
+      whois \
+      xz-utils \
+      yq \
+      zsh \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,6 +78,12 @@ RUN NVIM_TAG=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/la
     && mv /opt/nvim-linux-arm64 /opt/nvim \
     && ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim \
     && rm /tmp/nvim.tar.gz
+
+RUN LAZYGIT_VERSION=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest | jq -r '.tag_name' | sed 's/^v//') \
+    && curl -fsSL "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_arm64.tar.gz" -o /tmp/lazygit.tar.gz \
+    && tar -xz -f /tmp/lazygit.tar.gz -C /tmp lazygit \
+    && mv /tmp/lazygit /usr/local/bin/lazygit \
+    && rm /tmp/lazygit.tar.gz
 
 RUN NODE_VERSION=$(curl -fsSL https://nodejs.org/dist/index.json | jq -r 'first(.[].version)') \
     && curl -fsSL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.xz" -o /tmp/node.tar.xz \
