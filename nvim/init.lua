@@ -972,6 +972,8 @@ require('lazy').setup({
         preset = 'default',
         ['<CR>'] = { 'accept', 'fallback' },
         ['<Tab>'] = { 'accept', 'fallback' },
+        ['<C-p>'] = {},
+        ['<C-n>'] = {},
       },
 
       appearance = {

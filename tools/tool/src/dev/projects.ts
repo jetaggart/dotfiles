@@ -6,8 +6,6 @@ export type ProjectMeta = {
   name: string
   gitUrl?: string
   image: string
-  credsVolume: string
-  domain?: string
   createdAt: string
 }
 

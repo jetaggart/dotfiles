@@ -3,13 +3,13 @@ set -euo pipefail
 
 DOTFILES="${DOTFILES:-$HOME/code/dotfiles}"
 IMAGE="${DEV_BASE_IMAGE:-dev-base:latest}"
-DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/jetaggart/dotfiles}"
 
-cd "$DOTFILES/tools/docker/base"
+cd "$DOTFILES"
 
 docker build \
   --tag "$IMAGE" \
-  --build-arg "DOTFILES_REPO=$DOTFILES_REPO" \
+  --file tools/docker/base/Dockerfile \
+  --build-arg "CACHE_BUST=$(date +%s)" \
   .
 
 echo "built $IMAGE"

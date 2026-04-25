@@ -7,7 +7,7 @@ import {
   srcVolume,
   cacheVolume,
 } from "./paths"
-import { readGlobalConfig, credsVolumeFor, writeGlobalConfig } from "./config"
+import { readGlobalConfig, writeGlobalConfig } from "./config"
 import {
   listProjects,
   projectExists,
@@ -30,39 +30,39 @@ import {
 } from "./docker"
 import { runAuth } from "./auth"
 import { openInEditor } from "./code"
-import { writeDevcontainerJson } from "./devcontainer"
 
 function usage(): never {
   console.error(`usage: dev <command> [args...]
 
 projects:
-  create <name> [git-url] [--domain <d>] [--image <img>]   create a project
-  list                                                      list projects
-  start <name>                                              start container
-  stop <name>                                               stop container
-  shell <name>                                              shell into container
-  exec <name> -- <cmd...>                                   run command in container
-  claude <name>                                             run claude in container
-  code <name>                                               open in vscode (remote)
-  cursor <name>                                             open in cursor (remote)
-  rm <name>                                                 stop and remove container (keeps volume)
-  nuke <name> [--yes]                                       full wipe: container + volumes
-  rebuild <name>                                            rebuild image, keep volumes
+  create <name> [git-url] [--image <img>]   create a project
+  list                                       list projects
+  start <name>                               start container
+  stop <name>                                stop container
+  shell <name>                               shell into container (docker exec)
+  enter <name>                               alias for shell
+  ssh <name>                                  ssh into container (debug, real pty)
+  exec <name> -- <cmd...>                    run command in container
+  claude <name>                              run claude in container
+  code <name>                                open in vscode (remote)
+  cursor <name>                              open in cursor (remote)
+  nuke <name> [--yes]                        full wipe: container + volumes
+  rebuild <name>                             recreate container, keep volumes
 
 setup:
-  init                                                      bootstrap: build-image + auth (one shot)
-  auth [--domain <d>]                                       populate creds volume (claude /login, ssh)
-  build-image                                               build dev-base image
-  doctor                                                    check setup health
+  init                                       bootstrap: build-image + auth
+  auth [--from-scratch]                      refresh creds volume (reuses existing keys unless --from-scratch)
+  build-image                                build dev-base image
+  doctor                                     check setup health
 
 backups:
-  backup <name> <out.tar.gz>                                snapshot source volume
-  restore <name> <in.tar.gz>                                restore source volume from snapshot
+  backup <name> <out.tar.gz>                 snapshot source volume
+  restore <name> <in.tar.gz>                 restore source volume
 
 config:
-  config get <key>                                          read global config (baseImage, credsVolume)
-  config set <key> <value>                                  write global config
-  config domain <name> <credsVolume>                        define a domain with its own creds volume
+  config                                     show all
+  config get <key>                           read (baseImage, credsVolume)
+  config set <key> <value>                   write
 `)
   process.exit(1)
 }
@@ -70,19 +70,6 @@ config:
 function err(msg: string): never {
   console.error(`error: ${msg}`)
   process.exit(1)
-}
-
-function ensureBaseImage(): void {
-  const cfg = readGlobalConfig()
-  if (!imageExists(cfg.baseImage)) {
-    err(`base image '${cfg.baseImage}' not built. run: dev init`)
-  }
-}
-
-function ensureCredsVolume(volume: string): void {
-  if (!volumeExists(volume)) {
-    err(`creds volume '${volume}' missing. run: dev auth`)
-  }
 }
 
 function parseFlags(args: string[]): { positional: string[]; flags: Record<string, string | boolean> } {
@@ -137,29 +124,23 @@ async function cmdCreate(args: string[]): Promise<void> {
   if (!validProjectName(name)) err(`invalid project name: ${name}`)
   if (projectExists(name)) err(`project already exists: ${name}`)
 
-  ensureBaseImage()
-
   const cfg = readGlobalConfig()
-  const domain = typeof flags.domain === "string" ? flags.domain : undefined
-  const image = typeof flags.image === "string" ? flags.image : cfg.baseImage
-  const credsVolume = credsVolumeFor(domain)
+  if (!imageExists(cfg.baseImage)) err(`base image '${cfg.baseImage}' not built. run: dev init`)
+  if (!volumeExists(cfg.credsVolume)) err(`creds volume '${cfg.credsVolume}' missing. run: dev auth`)
 
-  ensureCredsVolume(credsVolume)
+  const image = typeof flags.image === "string" ? flags.image : cfg.baseImage
 
   const meta: ProjectMeta = {
     name,
     gitUrl,
     image,
-    credsVolume,
-    domain,
     createdAt: new Date().toISOString(),
   }
 
   mkdirSync(PROJECTS_DIR, { recursive: true })
   writeMeta(meta)
-  writeCompose(meta, { credsReadOnly: true })
+  writeCompose(meta)
 
-  console.log(`creating volumes`)
   ensureVolume(srcVolume(name))
   ensureVolume(cacheVolume(name))
 
@@ -178,13 +159,6 @@ async function cmdCreate(args: string[]): Promise<void> {
     if (cloneCode !== 0) {
       console.error(`warning: clone failed (exit ${cloneCode}). you can run it manually with: dev shell ${name}`)
     }
-  }
-
-  console.log(`writing .devcontainer/devcontainer.json`)
-  try {
-    await writeDevcontainerJson(name, image)
-  } catch (e) {
-    console.error(`warning: ${e}`)
   }
 
   console.log(`ready: dev shell ${name}`)
@@ -206,15 +180,16 @@ function cmdList(): void {
     }
     const cn = containerName(name)
     const status = containerRunning(cn) ? "running" : containerExists(cn) ? "stopped" : "absent"
-    const domain = meta.domain ? ` [${meta.domain}]` : ""
     const url = meta.gitUrl ? `  ${meta.gitUrl}` : ""
-    console.log(`${name.padEnd(24)}${status.padEnd(10)}${domain}${url}`)
+    console.log(`${name.padEnd(24)}${status.padEnd(10)}${url}`)
   }
 }
 
 async function cmdStart(args: string[]): Promise<void> {
   const name = resolveProject(args[0])
   if (!projectExists(name)) err(`project not found: ${name}`)
+  ensureVolume(srcVolume(name))
+  ensureVolume(cacheVolume(name))
   const code = await compose(projectComposeFile(name), ["up", "-d"])
   if (code !== 0) err(`failed to start ${name}`)
   console.log(`${name} started`)
@@ -232,11 +207,31 @@ async function cmdShell(args: string[]): Promise<void> {
   const name = resolveProject(args[0])
   if (!projectExists(name)) err(`project not found: ${name}`)
   const cn = containerName(name)
-  if (!containerRunning(cn)) {
-    await compose(projectComposeFile(name), ["up", "-d"])
-  }
+  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
   const code = await dockerStream(["exec", "-it", cn, "zsh", "-l"])
   process.exit(code)
+}
+
+async function cmdSsh(args: string[]): Promise<void> {
+  const name = resolveProject(args[0])
+  if (!projectExists(name)) err(`project not found: ${name}`)
+  const cn = containerName(name)
+  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
+
+  const ipResult = dockerSync(["inspect", "--format", "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}", cn])
+  const ip = ipResult.stdout.trim().split(/\s+/).find(s => s.length > 0)
+  if (!ip) err(`could not resolve container ip for ${cn}`)
+
+  const sshArgs = [
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "UserKnownHostsFile=/dev/null",
+    "-o", "LogLevel=ERROR",
+    "-t",
+    `root@${ip}`,
+    "zsh", "-l",
+  ]
+  const p = Bun.spawn(["ssh", ...sshArgs], { stdin: "inherit", stdout: "inherit", stderr: "inherit" })
+  process.exit(await p.exited)
 }
 
 async function cmdExec(args: string[]): Promise<void> {
@@ -245,9 +240,7 @@ async function cmdExec(args: string[]): Promise<void> {
   if (after.length === 0) err("usage: dev exec [<name>] -- <cmd...>")
   if (!projectExists(name)) err(`project not found: ${name}`)
   const cn = containerName(name)
-  if (!containerRunning(cn)) {
-    await compose(projectComposeFile(name), ["up", "-d"])
-  }
+  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
   const code = await dockerStream(["exec", "-it", cn, ...after])
   process.exit(code)
 }
@@ -256,9 +249,7 @@ async function cmdClaude(args: string[]): Promise<void> {
   const { name, rest } = takeProject(args)
   if (!projectExists(name)) err(`project not found: ${name}`)
   const cn = containerName(name)
-  if (!containerRunning(cn)) {
-    await compose(projectComposeFile(name), ["up", "-d"])
-  }
+  if (!containerRunning(cn)) await compose(projectComposeFile(name), ["up", "-d"])
   const code = await dockerStream(["exec", "-it", cn, "claude", ...rest])
   process.exit(code)
 }
@@ -273,15 +264,6 @@ async function cmdCode(args: string[], editor: "code" | "cursor"): Promise<void>
   }
   const code = await openInEditor(name, editor)
   process.exit(code)
-}
-
-async function cmdRm(args: string[]): Promise<void> {
-  const name = resolveProject(args[0])
-  if (!projectExists(name)) err(`project not found: ${name}`)
-  console.log(`stopping and removing container ${containerName(name)} (volumes preserved)`)
-  const code = await compose(projectComposeFile(name), ["down"])
-  if (code !== 0) err(`failed to remove`)
-  console.log(`removed (volumes ${srcVolume(name)} and ${cacheVolume(name)} preserved)`)
 }
 
 async function cmdNuke(args: string[]): Promise<void> {
@@ -308,6 +290,10 @@ async function cmdRebuild(args: string[]): Promise<void> {
   if (!projectExists(name)) err(`project not found: ${name}`)
   console.log(`rebuilding ${name} (preserving volumes)`)
   await compose(projectComposeFile(name), ["down"])
+  const meta = readMeta(name)
+  writeCompose(meta)
+  ensureVolume(srcVolume(name))
+  ensureVolume(cacheVolume(name))
   const code = await compose(projectComposeFile(name), ["up", "-d", "--force-recreate"])
   if (code !== 0) err(`failed to rebuild`)
   console.log(`${name} rebuilt`)
@@ -315,9 +301,7 @@ async function cmdRebuild(args: string[]): Promise<void> {
 
 async function cmdAuth(args: string[]): Promise<void> {
   const { flags } = parseFlags(args)
-  const domain = typeof flags.domain === "string" ? flags.domain : undefined
-  const credsVolume = typeof flags["creds-volume"] === "string" ? flags["creds-volume"] as string : undefined
-  await runAuth({ domain, credsVolume })
+  await runAuth({ fromScratch: !!flags["from-scratch"] })
 }
 
 function buildImageSync(): number {
@@ -332,31 +316,21 @@ function cmdBuildImage(): void {
   process.exit(buildImageSync())
 }
 
-async function cmdInit(args: string[]): Promise<void> {
-  const { flags } = parseFlags(args)
+async function cmdInit(): Promise<void> {
   const cfg = readGlobalConfig()
-  const domain = typeof flags.domain === "string" ? flags.domain : undefined
-  const credsVolume = typeof flags["creds-volume"] === "string" ? flags["creds-volume"] as string : undefined
-  const targetCreds = credsVolume ?? (domain ? cfg.domains[domain]?.credsVolume : undefined) ?? cfg.credsVolume
-
-  if (dockerSync(["info"]).code !== 0) {
-    err("docker is not running. start orbstack/docker desktop first.")
-  }
+  if (dockerSync(["info"]).code !== 0) err("docker is not running. start orbstack/docker desktop first.")
 
   if (!imageExists(cfg.baseImage)) {
-    console.log(`building ${cfg.baseImage}`)
-    const code = buildImageSync()
-    if (code !== 0) err(`base image build failed (exit ${code})`)
+    if (buildImageSync() !== 0) err(`base image build failed`)
   } else {
     console.log(`base image ${cfg.baseImage} already built`)
   }
 
-  if (volumeExists(targetCreds)) {
-    console.log(`creds volume ${targetCreds} already exists. run 'dev auth' to refresh creds, or 'dev init --force-auth' to enter the shell now.`)
-    if (!flags["force-auth"]) return
+  if (!volumeExists(cfg.credsVolume)) {
+    await runAuth()
+  } else {
+    console.log(`creds volume ${cfg.credsVolume} already exists. run 'dev auth' to refresh.`)
   }
-
-  await runAuth({ domain, credsVolume })
 }
 
 function cmdDoctor(): void {
@@ -375,15 +349,7 @@ function cmdDoctor(): void {
   console.log(`creds volume:  ${credsOk ? "ok" : `MISSING (${cfg.credsVolume})`}`)
   if (!credsOk) ok = false
 
-  for (const [domain, info] of Object.entries(cfg.domains)) {
-    const dOk = volumeExists(info.credsVolume)
-    console.log(`domain ${domain}:  ${dOk ? "ok" : `MISSING (${info.credsVolume})`}`)
-    if (!dOk) ok = false
-  }
-
-  const projects = listProjects()
-  console.log(`projects:      ${projects.length}`)
-
+  console.log(`projects:      ${listProjects().length}`)
   if (!ok) process.exit(1)
 }
 
@@ -393,10 +359,10 @@ async function cmdBackup(args: string[]): Promise<void> {
   if (!out) err("usage: dev backup [<name>] <out.tar.gz>")
   if (!projectExists(name)) err(`project not found: ${name}`)
   const src = srcVolume(name)
-  const outDir = out.startsWith("/") ? out : `${process.cwd()}/${out}`
-  const dirOf = outDir.replace(/\/[^/]+$/, "") || "/"
-  const fileOf = outDir.replace(/^.*\//, "")
-  console.log(`backing up volume ${src} → ${outDir}`)
+  const outPath = out.startsWith("/") ? out : `${process.cwd()}/${out}`
+  const dirOf = outPath.replace(/\/[^/]+$/, "") || "/"
+  const fileOf = outPath.replace(/^.*\//, "")
+  console.log(`backing up volume ${src} → ${outPath}`)
   const code = await dockerStream([
     "run", "--rm",
     "-v", `${src}:/src:ro`,
@@ -405,7 +371,7 @@ async function cmdBackup(args: string[]): Promise<void> {
     "tar", "czf", `/backup/${fileOf}`, "-C", "/src", ".",
   ])
   if (code !== 0) err(`backup failed`)
-  console.log(`backup written: ${outDir}`)
+  console.log(`backup written: ${outPath}`)
 }
 
 async function cmdRestore(args: string[]): Promise<void> {
@@ -414,12 +380,12 @@ async function cmdRestore(args: string[]): Promise<void> {
   if (!input) err("usage: dev restore [<name>] <in.tar.gz>")
   if (!projectExists(name)) err(`project not found: ${name}`)
   const src = srcVolume(name)
-  const inDir = input.startsWith("/") ? input : `${process.cwd()}/${input}`
-  const dirOf = inDir.replace(/\/[^/]+$/, "") || "/"
-  const fileOf = inDir.replace(/^.*\//, "")
+  const inPath = input.startsWith("/") ? input : `${process.cwd()}/${input}`
+  const dirOf = inPath.replace(/\/[^/]+$/, "") || "/"
+  const fileOf = inPath.replace(/^.*\//, "")
 
   ensureVolume(src)
-  console.log(`restoring ${inDir} → volume ${src} (existing contents will be deleted)`)
+  console.log(`restoring ${inPath} → volume ${src} (existing contents will be deleted)`)
   const code = await dockerStream([
     "run", "--rm",
     "-v", `${src}:/dst`,
@@ -435,11 +401,15 @@ async function cmdRestore(args: string[]): Promise<void> {
 function cmdConfig(args: string[]): void {
   const [sub, ...rest] = args
   const cfg = readGlobalConfig()
+  if (!sub) {
+    console.log(JSON.stringify(cfg, null, 2))
+    return
+  }
   if (sub === "get") {
     const [key] = rest
     if (!key) err("usage: dev config get <key>")
     const value = (cfg as unknown as Record<string, unknown>)[key]
-    console.log(value === undefined ? "" : typeof value === "string" ? value : JSON.stringify(value, null, 2))
+    console.log(value === undefined ? "" : String(value))
     return
   }
   if (sub === "set") {
@@ -451,24 +421,15 @@ function cmdConfig(args: string[]): void {
     console.log(`set ${key} = ${value}`)
     return
   }
-  if (sub === "domain") {
-    const [domain, vol] = rest
-    if (!domain || !vol) err("usage: dev config domain <name> <credsVolume>")
-    cfg.domains[domain] = { credsVolume: vol }
-    writeGlobalConfig(cfg)
-    console.log(`domain '${domain}' uses creds volume '${vol}'`)
-    return
-  }
-  if (!sub) {
-    console.log(JSON.stringify(cfg, null, 2))
-    return
-  }
   err(`unknown config subcommand: ${sub}`)
 }
 
 export async function devMain(args: string[]): Promise<void> {
   const [cmd, ...rest] = args
-  if (!cmd) usage()
+  if (!cmd) {
+    cmdList()
+    return
+  }
 
   switch (cmd) {
     case "create":      return cmdCreate(rest)
@@ -477,20 +438,24 @@ export async function devMain(args: string[]): Promise<void> {
     case "start":       return cmdStart(rest)
     case "stop":        return cmdStop(rest)
     case "shell":       return cmdShell(rest)
+    case "enter":       return cmdShell(rest)
+    case "ssh":         return cmdSsh(rest)
     case "exec":        return cmdExec(rest)
     case "claude":      return cmdClaude(rest)
     case "code":        return cmdCode(rest, "code")
     case "cursor":      return cmdCode(rest, "cursor")
-    case "rm":          return cmdRm(rest)
     case "nuke":        return cmdNuke(rest)
     case "rebuild":     return cmdRebuild(rest)
-    case "init":        return cmdInit(rest)
+    case "init":        return cmdInit()
     case "auth":        return cmdAuth(rest)
     case "build-image": return cmdBuildImage()
     case "doctor":      return cmdDoctor()
     case "backup":      return cmdBackup(rest)
     case "restore":     return cmdRestore(rest)
     case "config":      return cmdConfig(rest)
+    case "help":        usage()
+    case "-h":          usage()
+    case "--help":      usage()
     default:            usage()
   }
 }

@@ -4,13 +4,11 @@ import { CONFIG_DIR, GLOBAL_CONFIG, DEFAULT_BASE_IMAGE, DEFAULT_CREDS_VOLUME } f
 export type GlobalConfig = {
   baseImage: string
   credsVolume: string
-  domains: Record<string, { credsVolume: string }>
 }
 
 const DEFAULT: GlobalConfig = {
   baseImage: DEFAULT_BASE_IMAGE,
   credsVolume: DEFAULT_CREDS_VOLUME,
-  domains: {},
 }
 
 export function readGlobalConfig(): GlobalConfig {
@@ -25,10 +23,4 @@ export function readGlobalConfig(): GlobalConfig {
 export function writeGlobalConfig(cfg: GlobalConfig): void {
   mkdirSync(CONFIG_DIR, { recursive: true })
   writeFileSync(GLOBAL_CONFIG, JSON.stringify(cfg, null, 2) + "\n")
-}
-
-export function credsVolumeFor(domain: string | undefined): string {
-  const cfg = readGlobalConfig()
-  if (!domain) return cfg.credsVolume
-  return cfg.domains[domain]?.credsVolume ?? cfg.credsVolume
 }

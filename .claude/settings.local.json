@@ -50,7 +50,10 @@
       "Bash(~/bin/tools/tool q:*)",
       "Bash(~/bin/tools/tool)",
       "Read(//Users/jetaggart/code/dotfiles/**)",
-      "Bash(PATH=/opt/homebrew/bin:$PATH rg -n \"venv\\\\|pyproject\\\\|requirements\" /Users/jetaggart/code/dotfiles/tools/tool/src/ws/)"
+      "Bash(PATH=/opt/homebrew/bin:$PATH rg -n \"venv\\\\|pyproject\\\\|requirements\" /Users/jetaggart/code/dotfiles/tools/tool/src/ws/)",
+      "Bash(chmod +x *)",
+      "Bash(/tmp/tool-test dev *)",
+      "Bash(tool dev *)"
     ],
     "additionalDirectories": [
       "/Users/jetaggart/code/lettuce",

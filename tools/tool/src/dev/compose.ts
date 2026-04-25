@@ -1,15 +1,40 @@
-import { writeFileSync, mkdirSync } from "fs"
-import { dirname } from "path"
+import { writeFileSync, mkdirSync, readdirSync, existsSync } from "fs"
+import { dirname, join } from "path"
 import { containerName, srcVolume, cacheVolume, projectComposeFile } from "./paths"
+import { readGlobalConfig } from "./config"
 import type { ProjectMeta } from "./projects"
 
-export function composeYaml(meta: ProjectMeta, opts: { credsReadOnly: boolean }): string {
+const HOST_DOTFILES = process.env.DOTFILES ?? join(process.env.HOME!, "code", "dotfiles")
+const HOST_HOME = process.env.HOME!
+const DOTFILES_BIND_DIRS = ["zsh", "tmux", "claude"]
+
+function listHostPubkeys(): string[] {
+  const sshDir = join(HOST_HOME, ".ssh")
+  if (!existsSync(sshDir)) return []
+  try {
+    return readdirSync(sshDir).filter(f => f.endsWith(".pub")).sort()
+  } catch {
+    return []
+  }
+}
+
+export function composeYaml(meta: ProjectMeta): string {
   const cn = containerName(meta.name)
   const src = srcVolume(meta.name)
   const cache = cacheVolume(meta.name)
-  const credsMode = opts.credsReadOnly ? ":ro" : ""
+  const creds = readGlobalConfig().credsVolume
+
+  const dotfilesBindMounts = DOTFILES_BIND_DIRS.map(d =>
+    `      - ${join(HOST_DOTFILES, d)}:/root/code/dotfiles/${d}:ro`
+  )
+
+  const sshKeyMounts = listHostPubkeys().map(f =>
+    `      - ${join(HOST_HOME, ".ssh", f)}:/root/.ssh/host_authorized_keys.d/${f}:ro`
+  )
 
   const lines = [
+    `name: ${cn}`,
+    ``,
     `services:`,
     `  app:`,
     `    image: ${meta.image}`,
@@ -21,32 +46,35 @@ export function composeYaml(meta: ProjectMeta, opts: { credsReadOnly: boolean })
     `    working_dir: /work`,
     `    volumes:`,
     `      - ${src}:/work`,
-    `      - ${cache}:/home/dev/.cache`,
-    `      - ${meta.credsVolume}:/home/dev/.dev-creds${credsMode}`,
+    `      - ${cache}:/root/.cache`,
+    `      - ${creds}:/root/.dev-creds`,
+    ...sshKeyMounts,
+    ...dotfilesBindMounts,
     `    environment:`,
     `      DEV_PROJECT: ${meta.name}`,
-    `      DEV_CREDS_DIR: /home/dev/.dev-creds`,
+    `      DEV_CREDS_DIR: /root/.dev-creds`,
     `    labels:`,
     `      - "dev.tool.project=${meta.name}"`,
     meta.gitUrl ? `      - "dev.tool.git_url=${meta.gitUrl}"` : ``,
-    meta.domain ? `      - "dev.tool.domain=${meta.domain}"` : ``,
     ``,
     `volumes:`,
     `  ${src}:`,
+    `    external: true`,
     `    name: ${src}`,
     `  ${cache}:`,
-    `    name: ${cache}`,
-    `  ${meta.credsVolume}:`,
     `    external: true`,
-    `    name: ${meta.credsVolume}`,
+    `    name: ${cache}`,
+    `  ${creds}:`,
+    `    external: true`,
+    `    name: ${creds}`,
     ``,
   ]
 
   return lines.filter(l => l !== ``).join("\n") + "\n"
 }
 
-export function writeCompose(meta: ProjectMeta, opts: { credsReadOnly: boolean }): void {
+export function writeCompose(meta: ProjectMeta): void {
   const path = projectComposeFile(meta.name)
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, composeYaml(meta, opts))
+  writeFileSync(path, composeYaml(meta))
 }

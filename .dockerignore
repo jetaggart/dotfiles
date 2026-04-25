@@ -1,0 +1,11 @@
+.git
+.me
+.claude
+.cursor
+.vscode
+**/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/.DS_Store
+*.code-workspace

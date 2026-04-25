@@ -102,21 +102,21 @@ One-time setup: `dev init`
 <dev_commands>
 | command | purpose |
 |---|---|
-| `dev create <name> [git-url]` | new project: volumes + container + clone + devcontainer.json |
-| `dev list` | show projects + status |
+| `dev` | list projects + status (no args) |
+| `dev create <name> [git-url]` | new project: volumes + container + optional clone |
 | `dev start/stop <name>` | container lifecycle |
 | `dev shell <name>` | interactive zsh inside container |
 | `dev exec <name> -- <cmd>` | one-off command inside |
 | `dev claude <name>` | run claude inside container |
-| `dev code <name>` | open in vscode (remote-containers attached) |
-| `dev cursor <name>` | open in cursor (same) |
-| `dev rm <name>` | remove container, keep volumes |
+| `dev code <name>` / `dev cursor <name>` | open in editor (remote-containers attached) |
 | `dev nuke <name> --yes` | full wipe: container + source + cache volumes |
-| `dev rebuild <name>` | recreate container against new image, keep volumes |
-| `dev backup <name> <out.tar.gz>` | snapshot source volume |
-| `dev restore <name> <in.tar.gz>` | restore source volume from snapshot |
-| `dev doctor` | health check (docker, image, creds volume, projects) |
-| `dev config domain <d> <volume>` | define a domain with its own creds volume |
+| `dev rebuild <name>` | recreate container, keep volumes (regenerates compose.yaml) |
+| `dev backup/restore <name> <file>` | snapshot/restore source volume |
+| `dev init` | first-time bootstrap (build-image + auth) |
+| `dev auth` | refresh creds volume |
+| `dev build-image` | rebuild dev-base |
+| `dev doctor` | health check |
+| `dev config [get/set]` | global config (baseImage, credsVolume) |
 
 Subcommands accept `$DEV_PROJECT` as a fallback when `<name>` is omitted, so you can `export DEV_PROJECT=lettuce` and just run `dev shell` etc.
 </dev_commands>
@@ -137,7 +137,6 @@ claude
 <dev_security_model>
 - malicious npm package can't read host secrets (~/.ssh, ~/.aws, browser profiles, wallets) — none are mounted into containers.
 - shared creds volume holds claude OAuth + a github ssh key dedicated to dev work. mounted read-only into project containers; revoke and re-auth if compromised.
-- per-domain creds volumes available via `dev config domain <d> <vol>` for stronger separation between e.g. work and personal projects.
 - network egress is unrestricted — design choice for simplicity. read protections cut off most stealer-style threats at the source.
 </dev_security_model>
 

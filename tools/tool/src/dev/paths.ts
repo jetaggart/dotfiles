@@ -1,6 +1,6 @@
 import { join } from "path"
 
-export const HOME = process.env.HOME!
+const HOME = process.env.HOME!
 export const CONFIG_DIR = join(HOME, ".config", "dev")
 export const PROJECTS_DIR = join(CONFIG_DIR, "projects")
 export const GLOBAL_CONFIG = join(CONFIG_DIR, "config.json")

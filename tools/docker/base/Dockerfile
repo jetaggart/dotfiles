@@ -1,64 +1,91 @@
-FROM ubuntu:24.04
-
-ARG DOTFILES_REPO=https://github.com/jetaggart/dotfiles
-ARG USERNAME=dev
-ARG USER_UID=1000
-ARG USER_GID=1000
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
+ENV HOME=/root
+ENV TERM=xterm-256color
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      sudo curl ca-certificates git build-essential \
-      unzip xz-utils \
-      neovim tmux zsh \
+      curl ca-certificates git build-essential \
+      unzip xz-utils tar \
+      tmux zsh \
       ripgrep fd-find fzf jq \
-      openssh-client gnupg locales \
+      openssh-client openssh-server gnupg locales \
+      socat \
+      ncurses-bin ncurses-term \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN if getent passwd $USER_UID > /dev/null; then userdel -r $(getent passwd $USER_UID | cut -d: -f1); fi \
-    && if getent group $USER_GID > /dev/null; then groupdel $(getent group $USER_GID | cut -d: -f1); fi \
-    && groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m -s /bin/zsh $USERNAME \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+RUN mkdir -p /run/sshd \
+    && { \
+      echo 'PermitRootLogin yes'; \
+      echo 'PasswordAuthentication no'; \
+      echo 'PubkeyAuthentication yes'; \
+      echo 'UsePAM no'; \
+      echo 'UseDNS no'; \
+      echo 'GSSAPIAuthentication no'; \
+      echo 'AuthorizedKeysFile /root/.ssh/authorized_keys'; \
+    } > /etc/ssh/sshd_config.d/99-dev.conf \
+    && ssh-keygen -A
 
-USER $USERNAME
-WORKDIR /home/$USERNAME
+COPY tools/docker/base/ghostty.terminfo /tmp/ghostty.terminfo
+RUN tic -x /tmp/ghostty.terminfo && rm /tmp/ghostty.terminfo
 
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH=/home/$USERNAME/.bun/bin:$PATH
+ARG CACHE_BUST=0
 
-ARG NODE_VERSION=22.12.0
-RUN curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-arm64.tar.xz \
-      -o /tmp/node.tar.xz \
-    && sudo tar -xJ -f /tmp/node.tar.xz -C /opt \
-    && sudo mv /opt/node-v${NODE_VERSION}-linux-arm64 /opt/node \
-    && sudo ln -sf /opt/node/bin/node /usr/local/bin/node \
-    && sudo ln -sf /opt/node/bin/npm /usr/local/bin/npm \
-    && sudo ln -sf /opt/node/bin/npx /usr/local/bin/npx \
+RUN NVIM_TAG=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.tag_name') \
+    && curl -fsSL "https://github.com/neovim/neovim/releases/download/${NVIM_TAG}/nvim-linux-arm64.tar.gz" -o /tmp/nvim.tar.gz \
+    && tar -xz -f /tmp/nvim.tar.gz -C /opt \
+    && mv /opt/nvim-linux-arm64 /opt/nvim \
+    && ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim \
+    && rm /tmp/nvim.tar.gz
+
+RUN NODE_VERSION=$(curl -fsSL https://nodejs.org/dist/index.json | jq -r 'first(.[].version)') \
+    && curl -fsSL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.xz" -o /tmp/node.tar.xz \
+    && tar -xJ -f /tmp/node.tar.xz -C /opt \
+    && mv /opt/node-${NODE_VERSION}-linux-arm64 /opt/node \
+    && ln -sf /opt/node/bin/node /usr/local/bin/node \
+    && ln -sf /opt/node/bin/npm /usr/local/bin/npm \
+    && ln -sf /opt/node/bin/npx /usr/local/bin/npx \
     && rm /tmp/node.tar.xz
 
-RUN umask 022 \
-    && mkdir -p ~/.npm-global \
-    && npm config set prefix ~/.npm-global \
-    && npm config set ignore-scripts true \
-    && npm config set min-release-age 7
-ENV PATH=/home/$USERNAME/.npm-global/bin:$PATH
+RUN GO_VERSION=$(curl -fsSL "https://go.dev/dl/?mode=json" | jq -r 'first(.[]).version') \
+    && curl -fsSL "https://go.dev/dl/${GO_VERSION}.linux-arm64.tar.gz" -o /tmp/go.tar.gz \
+    && tar -xz -f /tmp/go.tar.gz -C /opt \
+    && ln -sf /opt/go/bin/go /usr/local/bin/go \
+    && ln -sf /opt/go/bin/gofmt /usr/local/bin/gofmt \
+    && rm /tmp/go.tar.gz
 
-RUN npm install -g @anthropic-ai/claude-code
+RUN curl -fsSL https://github.com/astral-sh/uv/releases/latest/download/uv-aarch64-unknown-linux-gnu.tar.gz \
+      -o /tmp/uv.tar.gz \
+    && tar -xz -f /tmp/uv.tar.gz -C /tmp \
+    && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/local/bin/uv \
+    && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/local/bin/uvx \
+    && rm -rf /tmp/uv.tar.gz /tmp/uv-aarch64-unknown-linux-gnu
 
-RUN git clone $DOTFILES_REPO ~/code/dotfiles \
-    && bash ~/code/dotfiles/tools/docker/base/linux-install.sh
+WORKDIR /root
 
-USER root
-COPY entrypoint.sh /usr/local/bin/dev-entrypoint
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH=/root/.bun/bin:$PATH
+
+RUN mkdir -p /root/.npm-global \
+    && npm config set prefix /root/.npm-global \
+    && npm config set ignore-scripts true
+ENV PATH=/root/.npm-global/bin:$PATH
+
+RUN npm install -g npm@latest
+
+RUN npm install --ignore-scripts=false -g @anthropic-ai/claude-code pnpm yarn
+
+RUN npm config set min-release-age 7
+
+COPY . /root/code/dotfiles
+RUN bash /root/code/dotfiles/tools/docker/base/linux-install.sh
+
+COPY tools/docker/base/entrypoint.sh /usr/local/bin/dev-entrypoint
 RUN chmod +x /usr/local/bin/dev-entrypoint
-USER $USERNAME
 
 WORKDIR /work
-ENV TERM=xterm-256color
 ENTRYPOINT ["/usr/local/bin/dev-entrypoint"]
 CMD ["zsh", "-l"]

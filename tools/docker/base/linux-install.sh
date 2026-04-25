@@ -3,6 +3,12 @@ set -euo pipefail
 
 DOTFILES="$HOME/code/dotfiles"
 
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+  RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    || true
+fi
+
 ln -sf "$DOTFILES/gitignore_global" "$HOME/.gitignore_global"
 ln -sf "$DOTFILES/zsh/zshrc" "$HOME/.zshrc"
 ln -sf "$DOTFILES/tmux/tmux.conf" "$HOME/.tmux.conf"
@@ -20,9 +26,5 @@ cd "$DOTFILES/tools/tool"
 bun install
 cd /tmp
 bun build "$DOTFILES/tools/tool/src/main.tsx" --compile --outfile "$HOME/bin/tools/tool"
-
-if ! grep -q 'bin/tools' "$HOME/.zshrc.local" 2>/dev/null; then
-  echo 'export PATH="$HOME/bin/tools:$PATH"' >> "$HOME/.zshrc.local"
-fi
 
 echo "linux dotfiles installed"

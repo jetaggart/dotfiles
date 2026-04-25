@@ -2,8 +2,10 @@ import { spawn, spawnSync } from "bun"
 
 export type Result = { code: number; stdout: string; stderr: string }
 
+const DOCKER_ENV = { ...process.env, DOCKER_CLI_HINTS: "false" }
+
 export function dockerSync(args: string[]): Result {
-  const p = spawnSync(["docker", ...args], { stdout: "pipe", stderr: "pipe" })
+  const p = spawnSync(["docker", ...args], { stdout: "pipe", stderr: "pipe", env: DOCKER_ENV })
   return {
     code: p.exitCode,
     stdout: p.stdout.toString(),
@@ -24,6 +26,7 @@ export async function dockerStream(args: string[]): Promise<number> {
     stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
+    env: DOCKER_ENV,
   })
   return await p.exited
 }
