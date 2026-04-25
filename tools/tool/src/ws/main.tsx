@@ -6,34 +6,16 @@ import { findWsDir, workspaceRepoDirs, applyRandomTitleBar } from "./workspace"
 import { runCreateApp, runAddApp, runRemoveApp, runDeleteApp } from "./app"
 import { readFileSync } from "fs"
 
-const home = process.env.HOME!
-const presets: Record<string, { source: string; target: string }> = {
-  lettuce: {
-    source: join(home, "code", "lettuce"),
-    target: join(home, "code", "lettuce", "workspaces"),
-  },
-  wintermuse: {
-    source: join(home, "code", "wintermuse"),
-    target: join(home, "code", "wintermuse", "workspaces"),
-  },
-}
-
-function presetNames(): string {
-  return Object.keys(presets).sort().join(", ")
-}
-
 function Usage() {
   return (
     <Box flexDirection="column" paddingY={1}>
       <Text><Text bold>ws</Text> <Text color="gray">workspace manager</Text></Text>
       <Text> </Text>
-      <Text><Text color="blue">create</Text><Text color="gray">  ws create [--tmux] {"<"}preset{">"} · ws create [--tmux] {"<"}src{">"} {"<"}dst{">"}</Text></Text>
+      <Text><Text color="blue">create</Text><Text color="gray">  ws create [--tmux] · scans cwd for repos, creates workspace under cwd/workspaces</Text></Text>
       <Text><Text color="blue">add</Text><Text color="gray">     ws add · from inside a workspace</Text></Text>
       <Text><Text color="blue">remove</Text><Text color="gray">  ws remove · from inside a workspace</Text></Text>
       <Text><Text color="blue">color</Text><Text color="gray">   ws color · random title bar theme</Text></Text>
       <Text><Text color="blue">delete</Text><Text color="gray">  ws delete {"<"}dir{">"}</Text></Text>
-      <Text> </Text>
-      <Text><Text color="gray">presets  </Text><Text color="yellow" bold>{presetNames()}</Text></Text>
     </Box>
   )
 }
@@ -124,22 +106,14 @@ export function wsMain(args: string[]) {
   switch (command) {
     case "create": {
       const { useTmux, pos } = parseCreateArgs(rest)
-      if (pos.length === 1 && presets[pos[0]]) {
-        const p = presets[pos[0]]
-        runCreate(p.source, p.target, useTmux)
-        return
+      if (pos.length !== 0) {
+        render(<Text>usage: ws create [--tmux]  (scans cwd for repos)</Text>)
+        process.exit(1)
       }
-      if (pos.length === 2) {
-        runCreate(resolve(pos[0]), resolve(pos[1]), useTmux)
-        return
-      }
-      render(
-        <Box flexDirection="column">
-          <Text>usage: ws create [--tmux] {"<"}preset{">"} | ws create [--tmux] {"<"}source_dir{">"} {"<"}target_dir{">"}</Text>
-          <Text color="gray">presets: {presetNames()}</Text>
-        </Box>,
-      )
-      process.exit(1)
+      const source = resolve(process.cwd())
+      const target = join(source, "workspaces")
+      runCreate(source, target, useTmux)
+      return
     }
 
     case "add": {

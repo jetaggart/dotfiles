@@ -146,9 +146,78 @@
       "Bash(trash *)"
     ],
     "deny": [
+      "Bash(sudo *)",
+      "Bash(rm *)",
+      "Bash(dd *)",
+      "Bash(mkfs *)",
+      "Bash(diskutil *)",
+      "Bash(launchctl *)",
+      "Bash(chown *)",
+      "Bash(chmod 777*)",
+      "Bash(chmod -R 777*)",
+      "Bash(defaults write *)",
+      "Bash(systemsetup *)",
+      "Bash(pfctl *)",
+      "Bash(killall *)",
       "Bash(git push*)",
       "Bash(git pull*)",
-      "Bash(rm *)"
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git clean -fd*)",
+      "Bash(git clean -fdx*)",
+      "Bash(git branch -D*)",
+      "Bash(* ~/.ssh/*)",
+      "Bash(*~/.ssh/*)",
+      "Bash(* ~/.aws/*)",
+      "Bash(*~/.aws/*)",
+      "Bash(* ~/.gnupg/*)",
+      "Bash(*~/.gnupg/*)",
+      "Bash(* ~/.netrc*)",
+      "Bash(*~/.netrc*)",
+      "Bash(* /etc/*)",
+      "Bash(*curl*|*sh*)",
+      "Bash(*curl*|*bash*)",
+      "Bash(*wget*|*sh*)",
+      "Bash(*wget*|*bash*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.aws/config)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.netrc)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/Library/Keychains/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Write(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Write(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Write(~/.gnupg/**)",
+      "Edit(~/.gnupg/**)",
+      "Write(~/.netrc)",
+      "Edit(~/.netrc)",
+      "Write(~/Library/Keychains/**)",
+      "Edit(~/Library/Keychains/**)",
+      "Write(/etc/**)",
+      "Edit(/etc/**)",
+      "Write(/usr/**)",
+      "Edit(/usr/**)",
+      "Write(/System/**)",
+      "Edit(/System/**)",
+      "Write(/Library/LaunchDaemons/**)",
+      "Edit(/Library/LaunchDaemons/**)",
+      "Write(/Library/LaunchAgents/**)",
+      "Edit(/Library/LaunchAgents/**)",
+      "Write(~/Library/LaunchAgents/**)",
+      "Edit(~/Library/LaunchAgents/**)",
+      "Write(/bin/**)",
+      "Edit(/bin/**)",
+      "Write(/sbin/**)",
+      "Edit(/sbin/**)"
     ]
   },
   "statusLine": {
@@ -160,33 +229,11 @@
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },
-  "sandbox": {
-    "enabled": true,
-    "network": {
-      "allowedDomains": [
-        "github.com",
-        "*.github.com",
-        "api.anthropic.com",
-        "registry.npmjs.org",
-        "pkg.go.dev"
-      ]
-    },
-    "filesystem": {
-      "allowWrite": [
-        ".",
-        "~/.Trash"
-      ],
-      "denyWrite": [
-        "/"
-      ],
-      "allowRead": [
-        "/"
-      ]
-    }
-  },
   "spinnerTipsEnabled": false,
   "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
   "prefersReducedMotion": true,
   "notifications": false,
-  "awaySummaryEnabled": false
+  "theme": "light",
+  "editorMode": "vim"
 }

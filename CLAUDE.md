@@ -63,17 +63,83 @@ TypeScript CLI tools built with Ink and React. Compiled to a single native binar
   - `q q <question>` - quick one-shot (sonnet)
   - `q d` - delete current conversation
 - `ws` - workspace manager using git worktrees. Creates isolated workspaces with focused directory subsets. Generates `CLAUDE.local.md` with `<focus>` blocks. Symlinks the source's `CLAUDE.md` into the workspace if it exists.
-  - `ws create [--tmux] <preset>` or `ws create [--tmux] <source> <target>` - create workspace
+  - `ws create [--tmux]` - scans cwd for repos, creates workspace under cwd/workspaces
   - `ws add` - add repos to current workspace (same pick → check → focus flow as create)
   - `ws remove` - remove one repo from current workspace
   - `ws color` - pick a random title bar theme in the current workspace `.code-workspace`
   - `ws delete <dir>` - remove workspace and worktrees
-  - Presets: `lettuce` (~/code/lettuce)
 </tools>
 
 Shared code in `tools/tool/src/lib/`: `git.ts` (exec helpers), `styles.ts` (chalk color constants).
 
 To add a new tool: create `tools/tool/src/<name>/main.ts`, add case to `tools/tool/src/main.ts` switch.
+
+## `dev` (containerized projects)
+
+Project isolation via Docker on OrbStack. Each project lives in a named volume, runs in its own container, source code never sits on the host.
+
+<dev_architecture>
+- host: dotfiles + `tool` binary only. no project source.
+- per-project container `dev-<name>` running the `dev-base:latest` image.
+- per-project named volumes: `<name>-src` (source), `<name>-cache` (npm/bun caches).
+- shared `dev-creds` volume holds claude OAuth, ssh key, gitconfig. mounted read-only into project containers.
+- per-project compose file at `~/.config/dev/projects/<name>/compose.yaml`.
+- localhost networking: orbstack auto-publishes any container port to host `localhost:<port>`.
+- editor: vscode/cursor remote-containers attach to the running container; nvim works via `dev shell`.
+</dev_architecture>
+
+<dev_setup>
+One-time setup: `dev init`
+- builds `dev-base:latest` (ubuntu, node, bun, claude, dotfiles) if missing
+- drops you in a shell with the shared creds volume mounted, where you should run:
+  - `claude /login` (claude oauth)
+  - `ssh-keygen -t ed25519 -f ~/.dev-creds/ssh/id_ed25519 -N ''`
+  - `printf '[user]\n  name = Your Name\n  email = you@example.com\n' > ~/.dev-creds/gitconfig`
+  - exit when done
+- add `~/.dev-creds/ssh/id_ed25519.pub` (from inside the shell) to your github account
+</dev_setup>
+
+<dev_commands>
+| command | purpose |
+|---|---|
+| `dev create <name> [git-url]` | new project: volumes + container + clone + devcontainer.json |
+| `dev list` | show projects + status |
+| `dev start/stop <name>` | container lifecycle |
+| `dev shell <name>` | interactive zsh inside container |
+| `dev exec <name> -- <cmd>` | one-off command inside |
+| `dev claude <name>` | run claude inside container |
+| `dev code <name>` | open in vscode (remote-containers attached) |
+| `dev cursor <name>` | open in cursor (same) |
+| `dev rm <name>` | remove container, keep volumes |
+| `dev nuke <name> --yes` | full wipe: container + source + cache volumes |
+| `dev rebuild <name>` | recreate container against new image, keep volumes |
+| `dev backup <name> <out.tar.gz>` | snapshot source volume |
+| `dev restore <name> <in.tar.gz>` | restore source volume from snapshot |
+| `dev doctor` | health check (docker, image, creds volume, projects) |
+| `dev config domain <d> <volume>` | define a domain with its own creds volume |
+
+Subcommands accept `$DEV_PROJECT` as a fallback when `<name>` is omitted, so you can `export DEV_PROJECT=lettuce` and just run `dev shell` etc.
+</dev_commands>
+
+<dev_daily_flow>
+```
+dev start lettuce          # if stopped
+dev code lettuce           # vscode opens, attached to container
+dev shell lettuce          # second terminal inside container
+# inside the container:
+ws create my-feature            # worktrees inside the volume
+cd workspaces/my-feature
+claude
+# host browser: http://localhost:3000 hits a dev server in the container
+```
+</dev_daily_flow>
+
+<dev_security_model>
+- malicious npm package can't read host secrets (~/.ssh, ~/.aws, browser profiles, wallets) — none are mounted into containers.
+- shared creds volume holds claude OAuth + a github ssh key dedicated to dev work. mounted read-only into project containers; revoke and re-auth if compromised.
+- per-domain creds volumes available via `dev config domain <d> <vol>` for stronger separation between e.g. work and personal projects.
+- network egress is unrestricted — design choice for simplicity. read protections cut off most stealer-style threats at the source.
+</dev_security_model>
 
 ## Zsh Highlights
 

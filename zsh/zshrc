@@ -80,6 +80,7 @@ alias fix-dn='find "$HOME/.cursor/extensions" -type f -path "*/ms-dotnettools.cs
 alias br='bun run'
 alias pom='tool pom'
 alias ws='tool ws'
+alias dev='tool dev'
 unalias q 2>/dev/null
 alias q='noglob tool q'
 
@@ -433,6 +434,14 @@ k() {
 }
 
 export PATH=$PATH:$HOME/.maestro/bin
+
+# --- Homebrew Safety ---
+
+export HOMEBREW_NO_AUTO_UPDATE=1
+export HOMEBREW_NO_INSECURE_REDIRECT=1
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+export HOMEBREW_NO_ANALYTICS=1
+export HOMEBREW_CASK_OPTS="--require-sha"
 
 # bun completions
 [ -s "/Users/jetaggart/.bun/_bun" ] && source "/Users/jetaggart/.bun/_bun"
