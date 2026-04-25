@@ -20,6 +20,9 @@ if [ -d "$CREDS" ]; then
   if [ -f "$CREDS/gitconfig" ]; then
     ln -sf "$CREDS/gitconfig" /root/.gitconfig
   fi
+
+  mkdir -p "$CREDS/ngrok" /root/.config
+  ln -sfn "$CREDS/ngrok" /root/.config/ngrok
 fi
 
 if [ -d /root/.ssh/host_authorized_keys.d ]; then

@@ -110,6 +110,11 @@ RUN curl -fsSL https://github.com/astral-sh/uv/releases/latest/download/uv-aarch
     && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/local/bin/uvx \
     && rm -rf /tmp/uv.tar.gz /tmp/uv-aarch64-unknown-linux-gnu
 
+RUN curl -fsSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-arm64.tgz \
+      -o /tmp/ngrok.tgz \
+    && tar -xz -f /tmp/ngrok.tgz -C /usr/local/bin ngrok \
+    && rm /tmp/ngrok.tgz
+
 WORKDIR /root
 
 RUN curl -fsSL https://bun.sh/install | bash

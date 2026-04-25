@@ -450,6 +450,8 @@ export async function devMain(args: string[]): Promise<void> {
     case "help":        usage()
     case "-h":          usage()
     case "--help":      usage()
-    default:            usage()
+    default:
+      if (projectExists(cmd)) return cmdShell([cmd, ...rest])
+      usage()
   }
 }

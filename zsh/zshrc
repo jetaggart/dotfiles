@@ -6,6 +6,10 @@ ZSH_THEME="robbyrussell"
 plugins=(git)
 [ -s "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
+if [[ -n "$DEV_PROJECT" ]]; then
+  PROMPT="%F{cyan}[$DEV_PROJECT]%f $PROMPT"
+fi
+
 # --- Environment / PATH ---
 
 export EDITOR="$(command -v nvim 2>/dev/null || echo vim)"

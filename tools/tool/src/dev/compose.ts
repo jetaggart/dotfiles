@@ -1,5 +1,6 @@
 import { writeFileSync, mkdirSync, readdirSync, existsSync } from "fs"
 import { dirname, join } from "path"
+import { spawnSync } from "bun"
 import { containerName, srcVolume, cacheVolume, projectComposeFile, projectSshPort } from "./paths"
 import { readGlobalConfig } from "./config"
 import type { ProjectMeta } from "./projects"
@@ -16,6 +17,15 @@ function listHostPubkeys(): string[] {
   } catch {
     return []
   }
+}
+
+function hostScreenshotDir(): string {
+  try {
+    const r = spawnSync(["defaults", "read", "com.apple.screencapture", "location"], { stdout: "pipe", stderr: "pipe" })
+    const dir = r.stdout.toString().trim()
+    if (dir && existsSync(dir)) return dir
+  } catch {}
+  return join(HOST_HOME, "Desktop")
 }
 
 export function composeYaml(meta: ProjectMeta): string {
@@ -50,6 +60,7 @@ export function composeYaml(meta: ProjectMeta): string {
     `      - ${cache}:/root/.cache`,
     `      - ${creds}:/root/.dev-creds`,
     `      - /var/run/docker.sock:/var/run/docker.sock`,
+    `      - ${hostScreenshotDir()}:${hostScreenshotDir()}:ro`,
     ...sshKeyMounts,
     ...dotfilesBindMounts,
     `    environment:`,
