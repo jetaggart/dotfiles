@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       tar \
       tmux \
       traceroute \
+      trash-cli \
       tree \
       unzip \
       wget \

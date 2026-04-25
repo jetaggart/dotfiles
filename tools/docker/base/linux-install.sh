@@ -20,8 +20,10 @@ ln -sf "$DOTFILES/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
 
 mkdir -p "$HOME/.claude"
 ln -sf "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"
+ln -sf "$DOTFILES/claude/settings.container.json" "$HOME/.claude/settings.json"
+ln -sf "$DOTFILES/claude/statusline.sh" "$HOME/.claude/statusline.sh"
 ln -sfn "$DOTFILES/claude/skills" "$HOME/.claude/skills"
+ln -sfn "$DOTFILES/claude/hooks" "$HOME/.claude/hooks"
 
 mkdir -p "$HOME/bin/tools"
 cd "$DOTFILES/tools/tool"

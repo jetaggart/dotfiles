@@ -32,6 +32,9 @@ if [ -d /root/.ssh/host_authorized_keys.d ]; then
   chmod 600 /root/.ssh/authorized_keys
 fi
 
-echo "Port ${SSH_PORT:-22}" > /etc/ssh/sshd_config.d/99-port.conf
+{
+  echo "Port ${SSH_PORT:-22}"
+  [ -n "${DEV_PROJECT:-}" ] && echo "SetEnv DEV_PROJECT=${DEV_PROJECT}"
+} > /etc/ssh/sshd_config.d/99-runtime.conf
 
 exec /usr/sbin/sshd -D -e

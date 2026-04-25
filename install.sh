@@ -22,6 +22,7 @@ ln -sf "$DOTFILES/ghostty/config" "$HOME/Library/Application Support/com.mitchel
 mkdir -p "$HOME/.claude"
 ln -sf "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES/claude/settings.json" "$HOME/.claude/settings.json"
+ln -sf "$DOTFILES/claude/statusline.sh" "$HOME/.claude/statusline.sh"
 ln -sfn "$DOTFILES/claude/skills" "$HOME/.claude/skills"
 
 rm -rf "$HOME/bin/tools"

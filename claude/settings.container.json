@@ -1,0 +1,53 @@
+{
+  "env": {
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "ENABLE_LSP_TOOL": "1"
+  },
+  "defaultMode": "acceptEdits",
+  "permissions": {
+    "allow": [
+      "Read(/)",
+      "Glob(/)",
+      "Grep(/)",
+      "Edit(/)",
+      "Write(/)",
+      "Bash(*)",
+      "Agent",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git pull*)",
+      "Bash(* git push*)",
+      "Bash(* git pull*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/auto-format.sh" }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "spinnerTipsEnabled": false,
+  "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
+  "prefersReducedMotion": true,
+  "notifications": false,
+  "theme": "light",
+  "editorMode": "vim"
+}

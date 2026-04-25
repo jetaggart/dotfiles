@@ -109,7 +109,7 @@ All written text uses lowercase. No capitalization after periods or at the start
 
 <file_management>
 Prefer editing existing files over creating new ones. If you create temporary files or scripts during a task, clean them up when done.
-Use `trash` instead of `rm` for deleting files. It moves files to `~/.Trash` instead of permanently deleting them.
+Use `trash` instead of `rm` for deleting files. On macOS it's a shell function that moves files to `~/.Trash`. On linux it's `trash-cli` (same `trash` command). Both are recoverable.
 </file_management>
 
 <memory>
