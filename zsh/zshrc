@@ -18,6 +18,7 @@ export PNPM_HOME="$HOME/Library/pnpm"
 export PATH="$HOME/bin/tools:$PNPM_HOME:$PATH"
 [ -d "$HOME/.bun/bin" ] && export PATH="$HOME/.bun/bin:$PATH"
 [ -d "$HOME/.npm-global/bin" ] && export PATH="$HOME/.npm-global/bin:$PATH"
+[ -d "$HOME/.local/bin" ] && export PATH="$HOME/.local/bin:$PATH"
 export c="$HOME/code"
 export ENABLE_LSP_TOOL=1
 if command -v go >/dev/null 2>&1; then
@@ -35,6 +36,8 @@ case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
+
+[ -f /work/.me/zshrc.local ] && source /work/.me/zshrc.local
 
 setopt IGNORE_EOF
 

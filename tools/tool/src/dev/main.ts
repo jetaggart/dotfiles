@@ -40,13 +40,14 @@ projects:
   list                                       list projects
   start <name>                               start container
   stop <name>                                stop container
-  shell <name>                               ssh into container (real pty, smooth TUI)
+  shell <name>                               ssh into container (real pty, smooth TUI) [alias: sh, ssh]
   enter <name>                               docker exec into container (escape hatch)
   exec <name> -- <cmd...>                    run command in container
   claude <name>                              run claude in container
   code <name>                                open in vscode (remote)
   nuke <name> [--yes]                        full wipe: container + volumes
   rebuild <name>                             recreate container, keep volumes
+  bootstrap <name>                           re-run /work/.me/bootstrap.sh
 
 setup:
   init                                       (re)build image + auth if needed
@@ -289,6 +290,21 @@ async function cmdNuke(args: string[]): Promise<void> {
   console.log(`${name} nuked`)
 }
 
+async function cmdBootstrap(args: string[]): Promise<void> {
+  const name = resolveProject(args[0])
+  if (!projectExists(name)) err(`project not found: ${name}`)
+  const cn = await ensureRunning(name)
+  const script = `
+    if [ ! -x /work/.me/bootstrap.sh ]; then
+      echo "/work/.me/bootstrap.sh not found or not executable"
+      exit 1
+    fi
+    /work/.me/bootstrap.sh
+  `
+  const code = await dockerStream(["exec", "-it", cn, "bash", "-c", script])
+  process.exit(code)
+}
+
 async function cmdRebuild(args: string[]): Promise<void> {
   const name = resolveProject(args[0])
   if (!projectExists(name)) err(`project not found: ${name}`)
@@ -434,6 +450,7 @@ export async function devMain(args: string[]): Promise<void> {
     case "start":       return cmdStart(rest)
     case "stop":        return cmdStop(rest)
     case "shell":       return cmdShell(rest)
+    case "sh":          return cmdShell(rest)
     case "ssh":         return cmdShell(rest)
     case "enter":       return cmdEnter(rest)
     case "exec":        return cmdExec(rest)
@@ -441,6 +458,7 @@ export async function devMain(args: string[]): Promise<void> {
     case "code":        return cmdCode(rest)
     case "nuke":        return cmdNuke(rest)
     case "rebuild":     return cmdRebuild(rest)
+    case "bootstrap":   return cmdBootstrap(rest)
     case "init":        return cmdInit()
     case "auth":        return cmdAuth(rest)
     case "doctor":      return cmdDoctor()

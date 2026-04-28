@@ -37,4 +37,9 @@ fi
   [ -n "${DEV_PROJECT:-}" ] && echo "SetEnv DEV_PROJECT=${DEV_PROJECT}"
 } > /etc/ssh/sshd_config.d/99-runtime.conf
 
+if [ -x /work/.me/bootstrap.sh ]; then
+  echo "running /work/.me/bootstrap.sh"
+  /work/.me/bootstrap.sh || echo "bootstrap failed (continuing)"
+fi
+
 exec /usr/sbin/sshd -D -e

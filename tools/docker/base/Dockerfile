@@ -128,9 +128,12 @@ ENV PATH=/root/.npm-global/bin:$PATH
 
 RUN npm install -g npm@latest
 
-RUN npm install --ignore-scripts=false -g @anthropic-ai/claude-code pnpm yarn
+RUN npm install --ignore-scripts=false -g pnpm yarn
 
 RUN npm config set min-release-age 7
+
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH=/root/.local/bin:$PATH
 
 COPY . /root/code/dotfiles
 RUN bash /root/code/dotfiles/tools/docker/base/linux-install.sh
